@@ -1,0 +1,85 @@
+﻿Gormv2: # 鍙拡瀵?gorm  鎿嶄綔鏁版嵁搴撴湁鏁?
+  UseDbType: "mysql"   # admin 绯荤粺鐩墠鍙敮鎸乵ysql鏁版嵁搴擄紝璇峰嬁淇敼涓哄叾浠栨暟鎹簱
+  Mysql:
+    IsInitGlobalGormMysql: 1    # 闅忛」鐩惎鍔ㄤ负gorm db鍒濆鍖栦竴涓叏灞€ variable.GormDbMysql锛堝畬鍏ㄧ瓑浜?gorm.Db锛?姝ｇ‘閰嶇疆鏁版嵁搴擄紝璇ュ€煎繀椤昏缃负: 1
+    SlowThreshold: 30            # 鎱?SQL 闃堝€?sql鎵ц鏃堕棿瓒呰繃姝ゆ椂闂村崟浣嶏紙绉掞級锛屽氨浼氳Е鍙戠郴缁熸棩蹇楄褰?
+    Write:
+      Host: "127.0.0.1"
+      DataBase: "db_douyin1"
+      Port: 3306
+      Prefix: "tb_"   #  鐩墠娌℃湁鐢ㄥ埌璇ラ厤缃」
+      User: "root"
+      Pass: "YOUR_DB_PASSWORD"  # 淇敼涓轰綘鑷繁鐨勬暟鎹簱瀵嗙爜
+      Charset: "utf8mb4"
+      SetMaxIdleConns: 10   # 鏈€澶х┖闂茶繛鎺ユ暟
+      SetMaxOpenConns: 128  # 鏈€澶ф墦寮€杩炴帴鏁?
+      SetConnMaxLifetime: 60    # 杩炴帴涓嶆椿鍔ㄦ椂鐨勬渶澶х敓瀛樻椂闂?绉? 锛堟瘡涓繛鎺ョ殑鐢熷懡鍛ㄦ湡锛?
+      #ReConnectInterval: 1    # 淇濈暀椤?閲嶈繛鏁版嵁搴撻棿闅旂鏁?
+      #PingFailRetryTimes: 3   # 淇濈暀椤?鏈€澶ч噸杩炴鏁?
+    IsOpenReadDb: 0                     # 鏄惁寮€鍚鍐欏垎绂婚厤缃紙1=寮€鍚€?=鍏抽棴锛夛紝IsOpenReadDb=1,Read 閮ㄥ垎鍙傛暟鏈夋晥锛屽惁鍒橰ead閮ㄥ垎鍙傛暟鐩存帴蹇界暐
+    Read:
+      Host: "127.0.0.1"
+      DataBase: "db_douyin"
+      Port: 3306                        #娉ㄦ剰锛岄潪3306锛岃鑷璋冩暣
+      Prefix: "tb_"
+      User: "root"
+      Pass: "YOUR_DB_PASSWORD"  # 淇敼涓轰綘鑷繁鐨勬暟鎹簱瀵嗙爜
+      Charset: "utf8mb4"
+      SetMaxIdleConns: 10
+      SetMaxOpenConns: 128
+      SetConnMaxLifetime: 60
+
+  SqlServer:
+    IsInitGlobalGormSqlserver: 0 # 闅忛」鐩惎鍔ㄤ负gorm db鍒濆鍖栦竴涓叏灞€ variable.GormDbMysql锛堝畬鍏ㄧ瓑浜?gorm.Db锛?姝ｇ‘閰嶇疆鏁版嵁搴擄紝璇ュ€煎繀椤昏缃负: 1
+    SlowThreshold: 30
+    Write:
+      Host: "127.0.0.1"
+      DataBase: "db_douyin"
+      Port: 1433
+      Prefix: "tb_"
+      User: "Sa"
+      Pass: "YOUR_DB_PASSWORD"
+      #ReConnectInterval: 1    # 淇濈暀椤?閲嶈繛鏁版嵁搴撻棿闅旂鏁?
+      #PingFailRetryTimes: 3   # 淇濈暀椤?鏈€澶ч噸杩炴鏁?
+      SetMaxIdleConns: 10
+      SetMaxOpenConns: 128
+      SetConnMaxLifetime: 60
+    IsOpenReadDb: 0            # 鏄惁寮€鍚鍐欏垎绂婚厤缃紙1=寮€鍚€?=鍏抽棴锛夛紝IsOpenReadDb=1,Read  閮ㄥ垎鍙傛暟鏈夋晥锛屽惁鍒橰ead閮ㄥ垎鍙傛暟鐩存帴蹇界暐
+    Read:
+      Host: "127.0.0.1"
+      DataBase: "db_douyin"
+      Port: 1433
+      Prefix: "tb_"
+      User: "Sa"
+      Pass: "YourDbPassword"
+      SetMaxIdleConns: 10
+      SetMaxOpenConns: 128
+      SetConnMaxLifetime: 60
+
+  PostgreSql:
+    IsInitGlobalGormPostgreSql: 0  # 闅忛」鐩惎鍔ㄤ负gorm db鍒濆鍖栦竴涓叏灞€ variable.GormDbMysql锛堝畬鍏ㄧ瓑浜?gorm.Db锛?姝ｇ‘閰嶇疆鏁版嵁搴擄紝璇ュ€煎繀椤昏缃负: 1
+    SlowThreshold: 30
+    Write:
+      Host: "127.0.0.1"
+      DataBase: "db_douyin"
+      Port: 5432
+      Prefix: "tb_"
+      User: "postgres"
+      Pass: "YourDbPassword"
+      SetMaxIdleConns: 10
+      SetMaxOpenConns: 128
+      SetConnMaxLifetime: 60
+    #ReConnectInterval: 1    # 淇濈暀椤?閲嶈繛鏁版嵁搴撻棿闅旂鏁?
+    #PingFailRetryTimes: 3   # 淇濈暀椤?鏈€澶ч噸杩炴鏁?
+    IsOpenReadDb: 0            # 鏄惁寮€鍚鍐欏垎绂婚厤缃紙1=寮€鍚€?=鍏抽棴锛夛紝IsOpenReadDb=1,Read  閮ㄥ垎鍙傛暟鏈夋晥锛屽惁鍒橰ead閮ㄥ垎鍙傛暟鐩存帴蹇界暐
+    Read:
+      Host: "127.0.0.1"
+      DataBase: "db_douyin"
+      Port: 5432
+      Prefix: "tb_"
+      User: "postgres"
+      Pass: "YourDbPassword"
+      SetMaxIdleConns: 10
+      SetMaxOpenConns: 128
+      SetConnMaxLifetime: 60
+
