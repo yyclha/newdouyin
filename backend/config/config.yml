@@ -69,6 +69,12 @@ FileUploadSetting:
   WhiteCoverUploadFileSavePath: "/images/white_cover/"
   VideoUploadFileSavePath: "/videos/source/"
   VideoCoverUploadFileSavePath: "/videos/cover/"
+  VideoChunkStateTTL: 86400
+  VideoAsync:
+    Workers: 2
+    QueueSize: 16
+    MaxRetries: 3
+    ProcessingTimeoutSeconds: 900
   Cos:
     BucketURL: "https://douyin-1373944802.cos.ap-nanjing.myqcloud.com"                     # 例如 https://<Bucket-APPID>.cos.ap-shanghai.myqcloud.com
     BaseURL: ""                       # 对外访问域名，可填COS默认域名或自定义CDN域名

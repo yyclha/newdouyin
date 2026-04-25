@@ -79,3 +79,13 @@ export function completeVideoUpload(payload: { upload_id: string }) {
     data: payload
   })
 }
+
+export function getVideoUploadStatus(taskId: string) {
+  return request({
+    url: '/upload/video/status',
+    method: 'get',
+    params: {
+      task_id: taskId
+    }
+  })
+}

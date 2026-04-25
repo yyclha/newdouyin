@@ -40,6 +40,9 @@ func WebRegisterValidator() {
 
 		key = consts.ValidatorPrefix + "VideoComplete"
 		containers.Set(key, upload.VideoComplete{})
+
+		key = consts.ValidatorPrefix + "VideoStatus"
+		containers.Set(key, upload.VideoStatus{})
 	}
 
 	// user

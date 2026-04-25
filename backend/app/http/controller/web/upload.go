@@ -70,3 +70,15 @@ func (u *UploadController) VideoComplete(ctx *gin.Context) {
 		response.Fail(ctx, consts.FilesUploadFailCode, message, finalSavePath)
 	}
 }
+
+// VideoStatus 查询后台视频处理任务状态。
+func (u *UploadController) VideoStatus(ctx *gin.Context) {
+	if r, payload, message := upload_file.GetVideoUploadTaskStatus(ctx); r == true {
+		response.Success(ctx, consts.CurdStatusOkMsg, payload)
+	} else {
+		if message == "" {
+			message = consts.CurdSelectFailMsg
+		}
+		response.Fail(ctx, consts.CurdSelectFailCode, message, payload)
+	}
+}

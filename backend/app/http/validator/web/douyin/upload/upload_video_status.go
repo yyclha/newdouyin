@@ -9,13 +9,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// VideoComplete 定义视频上传完成请求参数。
-type VideoComplete struct {
-	UploadID
+// VideoStatus 定义视频后台处理任务状态查询参数。
+type VideoStatus struct {
+	TaskID
 }
 
-// CheckParams 校验视频上传完成参数并分发到控制器。
-func (v VideoComplete) CheckParams(ctx *gin.Context) {
+// CheckParams 校验视频后台处理任务状态查询参数并分发到控制器。
+func (v VideoStatus) CheckParams(ctx *gin.Context) {
 	if err := ctx.ShouldBind(&v); err != nil {
 		response.ValidatorError(ctx, err)
 		return
@@ -23,8 +23,8 @@ func (v VideoComplete) CheckParams(ctx *gin.Context) {
 
 	extraAddBindDataContext := data_transfer.DataAddContext(v, consts.ValidatorPrefix, ctx)
 	if extraAddBindDataContext == nil {
-		response.ErrorSystem(ctx, "video complete validator failed", "")
+		response.ErrorSystem(ctx, "video status validator failed", "")
 		return
 	}
-	(&web.UploadController{}).VideoComplete(extraAddBindDataContext)
+	(&web.UploadController{}).VideoStatus(extraAddBindDataContext)
 }

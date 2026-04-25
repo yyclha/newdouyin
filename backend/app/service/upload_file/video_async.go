@@ -7,8 +7,10 @@ import (
 	"errors"
 	"runtime"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 const (
@@ -25,6 +27,7 @@ var (
 
 type VideoUploadTask struct {
 	TaskID           string
+	UploadID         string
 	UID              int64
 	VideoFilePath    string
 	CoverFilePath    string
@@ -76,12 +79,33 @@ func EnqueueVideoUploadTask(task VideoUploadTask) error {
 }
 
 func videoUploadWorker(workerID int) {
-	for task := range videoUploadQueue {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-videoUploadQueue:
+			drainVideoUploadTasks(workerID)
+		case <-ticker.C:
+			drainVideoUploadTasks(workerID)
+		}
+	}
+}
+
+func drainVideoUploadTasks(workerID int) {
+	for {
+		task, err := claimNextVideoUploadTask()
+		if err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				variable.ZapLog.Error("failed to claim video upload task", zap.Error(err))
+			}
+			return
+		}
 		processVideoUploadTask(task, workerID)
 	}
 }
 
-func processVideoUploadTask(task VideoUploadTask, workerID int) {
+func processVideoUploadTask(task *PersistedVideoUploadTask, workerID int) {
 	logger := variable.ZapLog.With(
 		zap.String("task_id", task.TaskID),
 		zap.Int("worker_id", workerID),
@@ -90,7 +114,7 @@ func processVideoUploadTask(task VideoUploadTask, workerID int) {
 
 	if err := extractCoverFrame(task.VideoFilePath, task.CoverFilePath); err != nil {
 		logger.Error("failed to extract video cover", zap.Error(err))
-		cleanupLocalFiles(task.VideoFilePath, task.CoverFilePath)
+		_ = markVideoUploadTaskFailed(task, err)
 		return
 	}
 
@@ -102,7 +126,7 @@ func processVideoUploadTask(task VideoUploadTask, workerID int) {
 		playAddr, err = uploadLocalFileToCOS(task.VideoFilePath, task.VideoRelativeDir, task.VideoFileName, task.ContentType)
 		if err != nil {
 			logger.Error("failed to upload video to cos", zap.Error(err))
-			cleanupLocalFiles(task.VideoFilePath, task.CoverFilePath)
+			_ = markVideoUploadTaskFailed(task, err)
 			return
 		}
 
@@ -110,18 +134,19 @@ func processVideoUploadTask(task VideoUploadTask, workerID int) {
 		if err != nil {
 			logger.Error("failed to upload cover to cos", zap.Error(err))
 			_ = file_storage.DeletePublicResource(playAddr)
-			cleanupLocalFiles(task.VideoFilePath, task.CoverFilePath)
+			_ = markVideoUploadTaskFailed(task, err)
 			return
 		}
 	}
 
 	if ok := video.CreateVideoFactory("").InsertVideoByUID(task.UID, playAddr, task.VideoDesc, coverAddr, task.PrivateStatus); !ok {
+		err := errors.New("failed to persist uploaded video")
 		logger.Error("failed to persist uploaded video")
 		if useCOSStorage() {
 			_ = file_storage.DeletePublicResource(playAddr)
 			_ = file_storage.DeletePublicResource(coverAddr)
 		}
-		cleanupLocalFiles(task.VideoFilePath, task.CoverFilePath)
+		_ = markVideoUploadTaskFailed(task, err)
 		return
 	}
 
@@ -135,6 +160,9 @@ func processVideoUploadTask(task VideoUploadTask, workerID int) {
 
 	if useCOSStorage() {
 		cleanupLocalFiles(task.VideoFilePath, task.CoverFilePath)
+	}
+	if err := markVideoUploadTaskSucceeded(task, playAddr, coverAddr); err != nil {
+		logger.Error("failed to mark video upload task succeeded", zap.Error(err))
 	}
 
 	logger.Info("video upload task completed",

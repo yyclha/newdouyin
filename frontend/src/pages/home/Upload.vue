@@ -66,13 +66,20 @@
 </template>
 
 <script>
-import { completeVideoUpload, initVideoUpload, uploadVideoChunk } from '@/api/upload'
+import {
+  completeVideoUpload,
+  getVideoUploadStatus,
+  initVideoUpload,
+  uploadVideoChunk
+} from '@/api/upload'
 import { _notice } from '@/utils'
 import { useBaseStore } from '@/store/pinia'
 
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024
 const CHUNK_SIZE = 2 * 1024 * 1024
 const CHUNK_RETRY_TIMES = 3
+const TASK_STATUS_POLL_INTERVAL = 2000
+const TASK_STATUS_MAX_POLLS = 150
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/x-msvideo']
 const VIDEO_UPLOAD_SESSION_STORAGE_KEY = 'video-upload-sessions'
 
@@ -263,8 +270,8 @@ export default {
       throw new Error(`第 ${chunkIndex + 1} 个分片上传失败`)
     },
     async handleUploadFinished(payload) {
-      const uploadStatus = payload?.status || 'done'
-      const isQueued = uploadStatus === 'queued'
+      const uploadStatus = payload?.status || 'succeeded'
+      const isQueued = ['pending', 'processing', 'queued'].includes(uploadStatus)
       const successNotice = isQueued
         ? '视频已进入后台处理队列'
         : '视频上传成功'
@@ -286,6 +293,39 @@ export default {
       this.private_status = 0
       this.resetFileInput()
       this.$router.push('/home')
+    },
+    sleep(ms) {
+      return new Promise((resolve) => {
+        window.setTimeout(resolve, ms)
+      })
+    },
+    async waitVideoUploadTask(taskId) {
+      if (!taskId) {
+        return { status: 'succeeded' }
+      }
+
+      for (let pollCount = 0; pollCount < TASK_STATUS_MAX_POLLS; pollCount += 1) {
+        const res = await getVideoUploadStatus(taskId)
+        if (!this.isRequestSuccess(res)) {
+          throw new Error(this.getResponseMessage(res, '查询视频处理状态失败'))
+        }
+
+        const task = res.data ?? {}
+        if (task.status === 'succeeded') {
+          return task
+        }
+        if (task.status === 'failed' && Number(task.retryCount || 0) >= Number(task.maxRetries || 0)) {
+          throw new Error(task.errorMessage || '视频处理失败，请重新上传')
+        }
+
+        this.progressText =
+          task.status === 'failed'
+            ? `视频处理失败，正在重试 ${task.retryCount || 0}/${task.maxRetries || 0}`
+            : '视频后台处理中'
+        await this.sleep(TASK_STATUS_POLL_INTERVAL)
+      }
+
+      throw new Error('视频处理超时，请稍后到个人页查看')
     },
     async submitVideo() {
       if (!this.videoFile) {
@@ -332,7 +372,8 @@ export default {
         this.saveUploadId(file, uploadId)
 
         if (initData.status === 'queued') {
-          await this.handleUploadFinished(initData)
+          const finishedTask = await this.waitVideoUploadTask(initData.taskId)
+          await this.handleUploadFinished(finishedTask)
           return
         }
 
@@ -380,7 +421,15 @@ export default {
           return
         }
 
-        await this.handleUploadFinished(completeRes.data ?? {})
+        const completeData = completeRes.data ?? {}
+        if (completeData.taskId) {
+          this.updateUploadProgress(1, 1, '视频后台处理中')
+          const finishedTask = await this.waitVideoUploadTask(completeData.taskId)
+          await this.handleUploadFinished(finishedTask)
+          return
+        }
+
+        await this.handleUploadFinished(completeData)
       } catch (error) {
         this.notice = error?.message || '上传失败，请稍后重试'
         _notice(this.notice)

@@ -59,3 +59,8 @@ type ChunkHash struct {
 type ContentType struct {
 	ContentType *string `form:"content_type" json:"content_type" binding:"required"`
 }
+
+// TaskID 定义后台上传处理任务 ID 参数。
+type TaskID struct {
+	TaskID *string `form:"task_id" json:"task_id" binding:"required"`
+}

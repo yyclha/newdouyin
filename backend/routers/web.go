@@ -78,6 +78,8 @@ func InitWebRouter() *gin.Engine {
 		upload.POST("video/chunk", validatorFactory.Create(consts.ValidatorPrefix+"VideoChunk"))
 		// POST /upload/video/complete 合并分片并完成视频上传。
 		upload.POST("video/complete", validatorFactory.Create(consts.ValidatorPrefix+"VideoComplete"))
+		// GET /upload/video/status 查询后台视频处理状态。
+		upload.GET("video/status", validatorFactory.Create(consts.ValidatorPrefix+"VideoStatus"))
 	}
 
 	user := router.Group("user/")

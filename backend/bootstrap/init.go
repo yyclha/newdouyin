@@ -70,9 +70,6 @@ func init() {
 	// 5. Initialize global logger.
 	variable.ZapLog = zap_factory.CreateZapFactory(sys_log_hook.ZapLogHandler)
 
-	// 5.1 Initialize async video upload workers.
-	upload_file.InitVideoUploadQueue()
-
 	// 6. Initialize gorm clients according to config.
 	if variable.ConfigGormv2Yml.GetInt("Gormv2.Mysql.IsInitGlobalGormMysql") == 1 {
 		if dbMysql, err := gorm_v2.GetOneMysqlClient(); err != nil {
@@ -95,6 +92,9 @@ func init() {
 			variable.GormDbPostgreSql = dbPostgre
 		}
 	}
+
+	// 6.1 Initialize async video upload workers after database clients are ready.
+	upload_file.InitVideoUploadQueue()
 
 	// 7. Initialize snowflake generator.
 	variable.SnowFlake = snow_flake.CreateSnowflakeFactory()

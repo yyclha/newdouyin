@@ -95,6 +95,7 @@ func UploadCover(context *gin.Context, savePath string) (r bool, finnalSavePath 
 
 type preparedVideoUploadInput struct {
 	Sequence         int64
+	UploadID         string
 	UID              int64
 	VideoFilePath    string
 	VideoRelativeDir string
@@ -132,6 +133,7 @@ func enqueuePreparedVideoUpload(input preparedVideoUploadInput) (bool, interface
 
 	task := VideoUploadTask{
 		TaskID:           fmt.Sprintf("%d", input.Sequence),
+		UploadID:         input.UploadID,
 		UID:              input.UID,
 		VideoFilePath:    input.VideoFilePath,
 		CoverFilePath:    coverFilePath,
@@ -144,15 +146,22 @@ func enqueuePreparedVideoUpload(input preparedVideoUploadInput) (bool, interface
 		PrivateStatus:    input.PrivateStatus,
 	}
 
-	if err := EnqueueVideoUploadTask(task); err != nil {
-		variable.ZapLog.Error("failed to enqueue video upload task: " + err.Error())
-		cleanupLocalFiles(input.VideoFilePath, coverFilePath)
-		return false, nil, "failed to queue video upload task"
+	persistedTask, err := createVideoUploadTask(task)
+	if err != nil {
+		variable.ZapLog.Error("failed to persist video upload task: " + err.Error())
+		return false, nil, "failed to create video upload task"
+	}
+
+	if err = EnqueueVideoUploadTask(task); err != nil {
+		variable.ZapLog.Error("failed to wake video upload worker: " + err.Error())
 	}
 
 	return true, gin.H{
-		"taskId":        task.TaskID,
-		"status":        "queued",
+		"taskId":        persistedTask.TaskID,
+		"uploadId":      persistedTask.UploadID,
+		"status":        persistedTask.Status,
+		"retryCount":    persistedTask.RetryCount,
+		"maxRetries":    persistedTask.MaxRetries,
 		"videoDesc":     videoDesc,
 		"privateStatus": input.PrivateStatus,
 	}, ""

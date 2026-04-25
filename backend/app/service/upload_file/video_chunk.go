@@ -305,6 +305,10 @@ func CompleteVideoChunkUpload(context *gin.Context, savePath string) (r bool, fi
 		}, "chunks are missing"
 	}
 
+	if existingTask, taskErr := getVideoUploadTaskByUploadIDForUser(uploadID, currentUID); taskErr == nil {
+		return true, buildVideoUploadTaskResponse(existingTask), ""
+	}
+
 	if err = os.MkdirAll(savePath, os.ModePerm); err != nil {
 		variable.ZapLog.Error("failed to create video directory: " + err.Error())
 		return false, nil, "failed to create video directory"
@@ -326,6 +330,7 @@ func CompleteVideoChunkUpload(context *gin.Context, savePath string) (r bool, fi
 
 	ok, payload, errMessage := enqueuePreparedVideoUpload(preparedVideoUploadInput{
 		Sequence:         sequence,
+		UploadID:         meta.UploadID,
 		UID:              meta.UID,
 		VideoFilePath:    videoFilePath,
 		VideoRelativeDir: variable.ConfigYml.GetString("FileUploadSetting.VideoUploadFileSavePath"),
