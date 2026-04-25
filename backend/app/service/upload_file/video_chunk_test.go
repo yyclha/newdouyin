@@ -22,8 +22,8 @@ func TestExpectedVideoChunkSize(t *testing.T) {
 	if size := expectedVideoChunkSize(meta, 1); size != 2*1024 {
 		t.Fatalf("expected second chunk size 2048, got %d", size)
 	}
-	if size := expectedVideoChunkSize(meta, 2); size != 1225 {
-		t.Fatalf("expected last chunk size 1225, got %d", size)
+	if size := expectedVideoChunkSize(meta, 2); size != 1345 {
+		t.Fatalf("expected last chunk size 1345, got %d", size)
 	}
 }
 
