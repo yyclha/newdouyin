@@ -148,11 +148,11 @@ func createVideoUploadTask(task VideoUploadTask) (*PersistedVideoUploadTask, err
 	err := db.Transaction(func(tx *gorm.DB) error {
 		var existing PersistedVideoUploadTask
 		result := tx.Where("upload_id = ? AND uid = ?", task.UploadID, task.UID).First(&existing)
-		if result.Error == nil {
+		if result.Error == nil && result.RowsAffected > 0 {
 			record = existing
 			return nil
 		}
-		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return result.Error
 		}
 		return tx.Create(&record).Error
@@ -172,9 +172,12 @@ func getVideoUploadTaskForUser(taskID string, uid int64) (*PersistedVideoUploadT
 	}
 
 	var task PersistedVideoUploadTask
-	err := db.Where("task_id = ? AND uid = ?", taskID, uid).First(&task).Error
-	if err != nil {
-		return nil, err
+	result := db.Where("task_id = ? AND uid = ?", taskID, uid).First(&task)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 || task.ID == 0 {
+		return nil, gorm.ErrRecordNotFound
 	}
 	return &task, nil
 }
@@ -187,9 +190,12 @@ func getVideoUploadTaskByUploadIDForUser(uploadID string, uid int64) (*Persisted
 	}
 
 	var task PersistedVideoUploadTask
-	err := db.Where("upload_id = ? AND uid = ?", uploadID, uid).First(&task).Error
-	if err != nil {
-		return nil, err
+	result := db.Where("upload_id = ? AND uid = ?", uploadID, uid).First(&task)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 || task.ID == 0 {
+		return nil, gorm.ErrRecordNotFound
 	}
 	return &task, nil
 }
@@ -258,6 +264,9 @@ func claimNextVideoUploadTask() (*PersistedVideoUploadTask, error) {
 			First(&task)
 		if result.Error != nil {
 			return result.Error
+		}
+		if result.RowsAffected == 0 || task.ID == 0 {
+			return gorm.ErrRecordNotFound
 		}
 
 		updated := tx.Model(&PersistedVideoUploadTask{}).
