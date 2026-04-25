@@ -6,7 +6,7 @@
         <video controls :src="videoSrc" style="width: 100%; max-height: 30vh"></video>
       </div>
       <div v-else class="video-placeholder" @click="triggerVideoUpload">
-        <span>Select a local video</span>
+        <span>选择本地视频</span>
       </div>
       <input
         ref="fileInput"
@@ -20,7 +20,7 @@
           v-model.trim="description"
           cols="30"
           rows="4"
-          placeholder="Write a short description"
+          placeholder="添加作品描述"
         ></textarea>
       </div>
       <div class="textarea-ctn">
@@ -28,16 +28,16 @@
           v-model.trim="tags"
           cols="30"
           rows="4"
-          placeholder="Add hashtags, for example #travel #daily"
+          placeholder="添加话题，例如 #旅行 #日常"
         ></textarea>
       </div>
       <div class="parameters">
         <div class="permission-setting mt1r">
-          <span>Visibility</span>
+          <span>可见范围</span>
           <select v-model.number="private_status">
-            <option :value="0">Public</option>
-            <option :value="1">Friends only</option>
-            <option :value="2">Only me</option>
+            <option :value="0">公开</option>
+            <option :value="1">好友可见</option>
+            <option :value="2">仅自己可见</option>
           </select>
         </div>
       </div>
@@ -59,7 +59,7 @@
         :disabled="loading || !videoFile || !description"
         @click="submitVideo"
       >
-        {{ loading ? 'Uploading...' : 'Publish' }}
+        {{ loading ? '上传中...' : '发布' }}
       </dy-button>
     </div>
   </div>
@@ -89,7 +89,7 @@ export default {
       notice: '',
       loading: false,
       uploadProgress: 0,
-      progressText: 'Waiting to upload'
+      progressText: '等待上传'
     }
   },
   beforeUnmount() {
@@ -118,14 +118,14 @@ export default {
       }
 
       if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
-        this.notice = 'Only MP4, MOV and AVI videos are supported'
+        this.notice = '仅支持 MP4、MOV 和 AVI 格式的视频'
         _notice(this.notice)
         this.resetFileInput()
         return
       }
 
       if (file.size > MAX_VIDEO_SIZE) {
-        this.notice = 'Video size cannot exceed 50MB'
+        this.notice = '视频大小不能超过 50MB'
         _notice(this.notice)
         this.resetFileInput()
         return
@@ -133,7 +133,7 @@ export default {
 
       this.notice = ''
       this.uploadProgress = 0
-      this.progressText = 'Waiting to upload'
+      this.progressText = '等待上传'
       this.videoFile = file
       this.revokeVideoPreview()
       this.videoSrc = URL.createObjectURL(file)
@@ -171,7 +171,7 @@ export default {
     },
     async hashBlob(blob) {
       if (!window.crypto?.subtle) {
-        throw new Error('Current browser does not support chunk integrity verification')
+        throw new Error('当前浏览器不支持分片完整性校验')
       }
 
       const hashBuffer = await window.crypto.subtle.digest('SHA-256', await blob.arrayBuffer())
@@ -242,7 +242,7 @@ export default {
             this.updateUploadProgress(
               Math.min(uploadedBytes + currentLoaded, fileSize),
               fileSize,
-              `Uploading chunk ${chunkIndex + 1}/${totalChunks}`
+              `正在上传分片 ${chunkIndex + 1}/${totalChunks}`
             )
           }
         })
@@ -252,24 +252,24 @@ export default {
         }
 
         if (!this.shouldRetryChunkUpload(res)) {
-          throw new Error(this.getResponseMessage(res, `Chunk ${chunkIndex + 1} upload failed`))
+          throw new Error(this.getResponseMessage(res, `第 ${chunkIndex + 1} 个分片上传失败`))
         }
 
         if (attempt === CHUNK_RETRY_TIMES) {
-          throw new Error(this.getResponseMessage(res, `Chunk ${chunkIndex + 1} upload failed`))
+          throw new Error(this.getResponseMessage(res, `第 ${chunkIndex + 1} 个分片上传失败`))
         }
       }
 
-      throw new Error(`Chunk ${chunkIndex + 1} upload failed`)
+      throw new Error(`第 ${chunkIndex + 1} 个分片上传失败`)
     },
     async handleUploadFinished(payload) {
       const uploadStatus = payload?.status || 'done'
       const isQueued = uploadStatus === 'queued'
       const successNotice = isQueued
-        ? 'The video is queued for background processing'
-        : 'Video uploaded successfully'
+        ? '视频已进入后台处理队列'
+        : '视频上传成功'
 
-      this.updateUploadProgress(1, 1, isQueued ? 'Queued for async processing' : 'Upload completed')
+      this.updateUploadProgress(1, 1, isQueued ? '已进入后台处理队列' : '上传完成')
       _notice(successNotice)
       this.notice = successNotice
       this.baseStore.markMeRefresh(true)
@@ -289,11 +289,11 @@ export default {
     },
     async submitVideo() {
       if (!this.videoFile) {
-        this.notice = 'Please select a video first'
+        this.notice = '请先选择视频'
         return
       }
       if (!this.description) {
-        this.notice = 'Please enter a description'
+        this.notice = '请输入作品描述'
         return
       }
 
@@ -302,7 +302,7 @@ export default {
       this.notice = ''
       this.loading = true
       this.uploadProgress = 0
-      this.progressText = 'Initializing upload session'
+      this.progressText = '正在初始化上传会话'
 
       try {
         const savedUploadId = this.getSavedUploadId(file)
@@ -319,7 +319,7 @@ export default {
         })
 
         if (!this.isRequestSuccess(initRes)) {
-          this.notice = this.getResponseMessage(initRes, 'Failed to initialize upload')
+          this.notice = this.getResponseMessage(initRes, '初始化上传失败')
           _notice(this.notice)
           return
         }
@@ -327,7 +327,7 @@ export default {
         const initData = initRes.data ?? {}
         const uploadId = initData.uploadId || initData.upload_id || savedUploadId
         if (!uploadId) {
-          throw new Error('Server did not return uploadId')
+          throw new Error('服务器未返回 uploadId')
         }
         this.saveUploadId(file, uploadId)
 
@@ -338,7 +338,7 @@ export default {
 
         const uploadedChunks = new Set((initData.uploadedChunks || []).map((item) => Number(item)))
         let uploadedBytes = this.calculateUploadedBytes(file, uploadedChunks, totalChunks)
-        this.updateUploadProgress(uploadedBytes, file.size, 'Resuming chunk upload')
+        this.updateUploadProgress(uploadedBytes, file.size, '正在继续上传分片')
 
         for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex += 1) {
           if (uploadedChunks.has(chunkIndex)) {
@@ -346,7 +346,7 @@ export default {
           }
 
           const chunkBlob = this.getChunkBlob(file, chunkIndex)
-          this.progressText = `Verifying chunk ${chunkIndex + 1}/${totalChunks}`
+          this.progressText = `正在校验分片 ${chunkIndex + 1}/${totalChunks}`
           const chunkHash = await this.hashBlob(chunkBlob)
           await this.uploadChunkWithRetry({
             uploadId,
@@ -361,11 +361,11 @@ export default {
           this.updateUploadProgress(
             uploadedBytes,
             file.size,
-            `Uploaded ${chunkIndex + 1}/${totalChunks} chunks`
+            `已上传 ${chunkIndex + 1}/${totalChunks} 个分片`
           )
         }
 
-        this.progressText = 'Merging chunks on server'
+        this.progressText = '服务器正在合并视频'
         const completeRes = await completeVideoUpload({
           upload_id: uploadId
         })
@@ -373,16 +373,16 @@ export default {
           const missingChunks = completeRes?.data?.missingChunks
           const missingSuffix =
             Array.isArray(missingChunks) && missingChunks.length
-              ? ` Missing chunks: ${missingChunks.join(', ')}`
+              ? ` 缺失分片：${missingChunks.join(', ')}`
               : ''
-          this.notice = `${this.getResponseMessage(completeRes, 'Failed to merge video')}${missingSuffix}`
+          this.notice = `${this.getResponseMessage(completeRes, '合并视频失败')}${missingSuffix}`
           _notice(this.notice)
           return
         }
 
         await this.handleUploadFinished(completeRes.data ?? {})
       } catch (error) {
-        this.notice = error?.message || 'Upload failed, please retry later'
+        this.notice = error?.message || '上传失败，请稍后重试'
         _notice(this.notice)
       } finally {
         this.loading = false
