@@ -2,6 +2,16 @@
   <div class="posters">
     <div class="poster-item" :key="index" v-for="(i, index) in list" @click="goDetail(index)">
       <img class="poster" v-lazy="_checkImgUrl(i.video.cover)" alt="" />
+      <button
+        v-if="canDelete"
+        class="delete-btn"
+        type="button"
+        aria-label="删除作品"
+        title="删除作品"
+        @click.stop="emit('delete', i)"
+      >
+        <Icon icon="icon-park-outline:delete" />
+      </button>
       <template v-if="mode === 'normal'">
         <div class="num">
           <Icon icon="icon-park-outline:like" />
@@ -38,12 +48,18 @@ const props = defineProps({
   mode: {
     type: String,
     default: 'normal' //date,music
+  },
+  canDelete: {
+    type: Boolean,
+    default: false
   }
 })
 
 defineOptions({
   name: 'Posters'
 })
+
+const emit = defineEmits(['delete'])
 
 function goDetail(index) {
   store.routeData = cloneDeep({ list: props.list, index })
@@ -118,6 +134,23 @@ function getMonth(time) {
     border-radius: 2rem;
     top: 7rem;
     left: 7rem;
+  }
+
+  .delete-btn {
+    position: absolute;
+    top: 7rem;
+    right: 7rem;
+    z-index: 2;
+    width: 30rem;
+    height: 30rem;
+    border: 0;
+    border-radius: 50%;
+    color: white;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18rem;
   }
 
   .num {
