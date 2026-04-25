@@ -95,7 +95,12 @@ func init() {
 		}
 	}
 
-	// 6.1 Initialize async video upload workers after database clients are ready.
+	// 6.1 Ensure async video upload task table exists before workers start.
+	if err := upload_file.EnsureVideoUploadTaskTable(); err != nil {
+		log.Fatal("初始化视频上传任务表失败:" + err.Error())
+	}
+
+	// 6.2 Initialize async video upload workers after database clients are ready.
 	upload_file.InitVideoUploadQueue()
 
 	// 7. Initialize snowflake generator.

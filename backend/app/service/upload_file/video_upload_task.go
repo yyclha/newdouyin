@@ -59,6 +59,45 @@ func videoUploadTaskDB() *gorm.DB {
 	return model.UseDbConn("")
 }
 
+// EnsureVideoUploadTaskTable 确保视频上传补偿任务表已创建。
+func EnsureVideoUploadTaskTable() error {
+	db := videoUploadTaskDB()
+	if db == nil {
+		return errors.New("database is unavailable")
+	}
+
+	return db.Exec(`
+CREATE TABLE IF NOT EXISTS video_upload_tasks (
+  id bigint NOT NULL AUTO_INCREMENT,
+  task_id varchar(64) NOT NULL,
+  upload_id varchar(128) NOT NULL,
+  uid bigint NOT NULL,
+  status varchar(32) NOT NULL DEFAULT 'pending',
+  retry_count int NOT NULL DEFAULT 0,
+  max_retries int NOT NULL DEFAULT 3,
+  next_retry_at bigint NOT NULL DEFAULT 0,
+  error_message text,
+  video_file_path varchar(512) NOT NULL,
+  cover_file_path varchar(512) NOT NULL,
+  video_relative_dir varchar(255) NOT NULL,
+  cover_relative_dir varchar(255) NOT NULL,
+  video_file_name varchar(255) NOT NULL,
+  cover_file_name varchar(255) NOT NULL,
+  content_type varchar(128) NOT NULL,
+  video_desc text,
+  private_status int NOT NULL DEFAULT 0,
+  play_addr text,
+  cover_addr text,
+  created_at bigint NOT NULL,
+  updated_at bigint NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_video_upload_tasks_task_id (task_id),
+  UNIQUE KEY uk_video_upload_tasks_upload_uid (upload_id, uid),
+  KEY idx_video_upload_tasks_status_retry (status, next_retry_at, retry_count)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+`).Error
+}
+
 // videoUploadMaxRetries 执行业务处理。
 func videoUploadMaxRetries() int {
 	maxRetries := variable.ConfigYml.GetInt("FileUploadSetting.VideoAsync.MaxRetries")
