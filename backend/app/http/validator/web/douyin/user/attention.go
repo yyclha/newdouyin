@@ -8,11 +8,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Attention 定义业务数据结构。
 type Attention struct {
 	FollowingId
 	Action
 }
 
+// CheckParams 执行对象方法逻辑。
 func (a Attention) CheckParams(ctx *gin.Context) {
 	//1.基本的验证规则没有通过
 	if err := ctx.ShouldBind(&a); err != nil {

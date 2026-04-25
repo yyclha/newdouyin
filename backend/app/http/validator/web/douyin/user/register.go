@@ -8,11 +8,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Register 定义业务数据结构。
 type Register struct {
 	Phone
 	Password
 }
 
+// CheckParams 执行对象方法逻辑。
 func (r Register) CheckParams(ctx *gin.Context) {
 	//1.基本的验证规则没有通过
 	if err := ctx.ShouldBind(&r); err != nil {

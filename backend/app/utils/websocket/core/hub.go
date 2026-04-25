@@ -1,5 +1,6 @@
 package core
 
+// Hub 定义业务数据结构。
 type Hub struct {
 	//上线注册
 	Register chan *Client
@@ -9,6 +10,7 @@ type Hub struct {
 	Clients map[*Client]bool
 }
 
+// CreateHubFactory 执行业务处理。
 func CreateHubFactory() *Hub {
 	return &Hub{
 		Register:   make(chan *Client),
@@ -17,6 +19,7 @@ func CreateHubFactory() *Hub {
 	}
 }
 
+// Run 执行对象方法逻辑。
 func (h *Hub) Run() {
 	for {
 		select {

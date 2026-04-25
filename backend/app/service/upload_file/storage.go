@@ -11,10 +11,12 @@ import (
 	"strings"
 )
 
+// useCOSStorage 执行业务处理。
 func useCOSStorage() bool {
 	return file_storage.UseCOSStorage()
 }
 
+// buildPublicFileURL 执行业务处理。
 func buildPublicFileURL(relativeDir, filename string) string {
 	if useCOSStorage() {
 		key := buildCOSObjectKey(relativeDir, filename)
@@ -26,6 +28,7 @@ func buildPublicFileURL(relativeDir, filename string) string {
 	return prefix + cleanDir + "/" + filename
 }
 
+// buildCOSObjectKey 执行业务处理。
 func buildCOSObjectKey(relativeDir, filename string) string {
 	cleanDir := strings.Trim(strings.ReplaceAll(relativeDir, "\\", "/"), "/")
 	pathPrefix := strings.Trim(strings.ReplaceAll(variable.ConfigYml.GetString("FileUploadSetting.Cos.PathPrefix"), "\\", "/"), "/")
@@ -35,6 +38,7 @@ func buildCOSObjectKey(relativeDir, filename string) string {
 	return path.Join(cleanDir, filename)
 }
 
+// buildCOSPublicURL 执行业务处理。
 func buildCOSPublicURL(objectKey string) string {
 	baseURL := strings.TrimSpace(variable.ConfigYml.GetString("FileUploadSetting.Cos.BaseURL"))
 	if baseURL == "" {
@@ -43,6 +47,7 @@ func buildCOSPublicURL(objectKey string) string {
 	return strings.TrimRight(baseURL, "/") + "/" + strings.TrimLeft(objectKey, "/")
 }
 
+// uploadLocalFileToCOS 执行业务处理。
 func uploadLocalFileToCOS(localPath, relativeDir, filename, contentType string) (string, error) {
 	client, err := file_storage.NewCOSClient()
 	if err != nil {
@@ -63,6 +68,7 @@ func uploadLocalFileToCOS(localPath, relativeDir, filename, contentType string) 
 	return buildCOSPublicURL(key), nil
 }
 
+// detectContentType 执行业务处理。
 func detectContentType(filename, headerValue string) string {
 	if strings.TrimSpace(headerValue) != "" {
 		return headerValue

@@ -19,6 +19,8 @@ func init() {
 	configYml = yml_config.CreateYamlFactory()
 	redisPool = initRedisClientPool()
 }
+
+// initRedisClientPool 执行业务处理。
 func initRedisClientPool() *redis.Pool {
 	redisPool = &redis.Pool{
 		MaxIdle:     configYml.GetInt("Redis.MaxIdle"),                        //最大空闲数
@@ -86,14 +88,17 @@ type RedisClient struct {
 	client redis.Conn
 }
 
+// Close 执行对象方法逻辑。
 func (r *RedisClient) Close() error {
 	return r.client.Close()
 }
 
+// Err 执行对象方法逻辑。
 func (r *RedisClient) Err() error {
 	return r.client.Err()
 }
 
+// Do 执行对象方法逻辑。
 func (r *RedisClient) Do(cmd string, args ...interface{}) (interface{}, error) {
 	return r.client.Do(cmd, args...)
 }
@@ -103,14 +108,17 @@ func (r *RedisClient) Execute(cmd string, args ...interface{}) (interface{}, err
 	return r.client.Do(cmd, args...)
 }
 
+// Send 执行对象方法逻辑。
 func (r *RedisClient) Send(cmd string, args ...interface{}) error {
 	return r.client.Send(cmd, args...)
 }
 
+// Flush 执行对象方法逻辑。
 func (r *RedisClient) Flush() error {
 	return r.client.Flush()
 }
 
+// Receive 执行对象方法逻辑。
 func (r *RedisClient) Receive() (interface{}, error) {
 	return r.client.Receive()
 }

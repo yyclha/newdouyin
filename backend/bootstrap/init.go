@@ -18,6 +18,7 @@ import (
 	"os"
 )
 
+// checkRequiredFolders 执行业务处理。
 func checkRequiredFolders() {
 	storageAppPath := variable.BasePath + "/storage/app"
 	publicStoragePath := variable.BasePath + "/public/storage"
@@ -51,6 +52,7 @@ func checkRequiredFolders() {
 	}
 }
 
+// init 执行业务处理。
 func init() {
 	// 1. Initialize project base path.
 

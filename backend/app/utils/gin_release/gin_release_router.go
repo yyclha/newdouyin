@@ -38,6 +38,7 @@ func CustomRecovery() gin.HandlerFunc {
 // PanicExceptionRecord  panic等异常记录
 type PanicExceptionRecord struct{}
 
+// Write 执行对象方法逻辑。
 func (p *PanicExceptionRecord) Write(b []byte) (n int, err error) {
 	errStr := string(b)
 	err = errors.New(errStr)

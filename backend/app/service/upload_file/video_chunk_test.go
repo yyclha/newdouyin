@@ -9,6 +9,7 @@ import (
 	"testing"
 )
 
+// TestExpectedVideoChunkSize 执行业务处理。
 func TestExpectedVideoChunkSize(t *testing.T) {
 	meta := videoChunkUploadMeta{
 		FileSize:    5*1024 + 321,
@@ -27,6 +28,7 @@ func TestExpectedVideoChunkSize(t *testing.T) {
 	}
 }
 
+// TestValidateVideoChunkHash 执行业务处理。
 func TestValidateVideoChunkHash(t *testing.T) {
 	validHash := "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
 	if err := validateVideoChunkHash(validHash); err != nil {
@@ -38,6 +40,7 @@ func TestValidateVideoChunkHash(t *testing.T) {
 	}
 }
 
+// TestListValidUploadedChunkIndexes 执行业务处理。
 func TestListValidUploadedChunkIndexes(t *testing.T) {
 	tempDir := t.TempDir()
 	meta := videoChunkUploadMeta{
@@ -71,6 +74,7 @@ func TestListValidUploadedChunkIndexes(t *testing.T) {
 	}
 }
 
+// TestCollectVerifiedVideoChunks 执行业务处理。
 func TestCollectVerifiedVideoChunks(t *testing.T) {
 	tempDir := t.TempDir()
 	meta := videoChunkUploadMeta{

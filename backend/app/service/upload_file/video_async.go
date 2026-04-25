@@ -25,6 +25,7 @@ var (
 	errVideoUploadQueueFull = errors.New("video upload queue is full")
 )
 
+// VideoUploadTask 定义业务数据结构。
 type VideoUploadTask struct {
 	TaskID           string
 	UploadID         string
@@ -40,6 +41,7 @@ type VideoUploadTask struct {
 	PrivateStatus    int
 }
 
+// InitVideoUploadQueue 执行业务处理。
 func InitVideoUploadQueue() {
 	videoUploadQueueOnce.Do(func() {
 		workerCount := variable.ConfigYml.GetInt("FileUploadSetting.VideoAsync.Workers")
@@ -67,6 +69,7 @@ func InitVideoUploadQueue() {
 	})
 }
 
+// EnqueueVideoUploadTask 执行业务处理。
 func EnqueueVideoUploadTask(task VideoUploadTask) error {
 	InitVideoUploadQueue()
 
@@ -78,6 +81,7 @@ func EnqueueVideoUploadTask(task VideoUploadTask) error {
 	}
 }
 
+// videoUploadWorker 执行业务处理。
 func videoUploadWorker(workerID int) {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
@@ -92,6 +96,7 @@ func videoUploadWorker(workerID int) {
 	}
 }
 
+// drainVideoUploadTasks 执行业务处理。
 func drainVideoUploadTasks(workerID int) {
 	for {
 		task, err := claimNextVideoUploadTask()
@@ -105,6 +110,7 @@ func drainVideoUploadTasks(workerID int) {
 	}
 }
 
+// processVideoUploadTask 执行业务处理。
 func processVideoUploadTask(task *PersistedVideoUploadTask, workerID int) {
 	logger := variable.ZapLog.With(
 		zap.String("task_id", task.TaskID),

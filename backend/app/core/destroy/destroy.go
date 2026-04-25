@@ -10,6 +10,7 @@ import (
 	"syscall"
 )
 
+// init 执行业务处理。
 func init() {
 	//  用于系统信号的监听
 	go func() {

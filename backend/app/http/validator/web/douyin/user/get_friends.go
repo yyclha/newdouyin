@@ -8,9 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// GetFriends 定义业务数据结构。
 type GetFriends struct {
 }
 
+// CheckParams 执行对象方法逻辑。
 func (g GetFriends) CheckParams(context *gin.Context) {
 	//1.基本的验证规则没有通过
 	if err := context.ShouldBind(&g); err != nil {

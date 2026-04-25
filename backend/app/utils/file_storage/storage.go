@@ -12,10 +12,12 @@ import (
 	"strings"
 )
 
+// UseCOSStorage 执行业务处理。
 func UseCOSStorage() bool {
 	return strings.EqualFold(strings.TrimSpace(variable.ConfigYml.GetString("FileUploadSetting.StorageDriver")), "cos")
 }
 
+// DeletePublicResource 执行业务处理。
 func DeletePublicResource(resourceURL string) error {
 	resourceURL = strings.TrimSpace(resourceURL)
 	if resourceURL == "" {
@@ -28,6 +30,7 @@ func DeletePublicResource(resourceURL string) error {
 	return deleteLocalResource(resourceURL)
 }
 
+// deleteCOSResource 执行业务处理。
 func deleteCOSResource(resourceURL string) error {
 	objectKey, ok := ExtractCOSObjectKey(resourceURL)
 	if !ok || objectKey == "" {
@@ -43,6 +46,7 @@ func deleteCOSResource(resourceURL string) error {
 	return err
 }
 
+// deleteLocalResource 执行业务处理。
 func deleteLocalResource(resourceURL string) error {
 	sourcePrefix := strings.TrimRight(strings.TrimSpace(variable.ConfigYml.GetString("FileUploadSetting.SourceUrlPrefix")), "/")
 	if !strings.HasPrefix(resourceURL, sourcePrefix+"/") {
@@ -70,6 +74,7 @@ func deleteLocalResource(resourceURL string) error {
 	return nil
 }
 
+// ExtractCOSObjectKey 执行业务处理。
 func ExtractCOSObjectKey(resourceURL string) (string, bool) {
 	candidates := []string{
 		strings.TrimSpace(variable.ConfigYml.GetString("FileUploadSetting.Cos.BaseURL")),
@@ -89,6 +94,7 @@ func ExtractCOSObjectKey(resourceURL string) (string, bool) {
 	return "", false
 }
 
+// NewCOSClient 执行业务处理。
 func NewCOSClient() (*cos.Client, error) {
 	bucketURL := strings.TrimSpace(variable.ConfigYml.GetString("FileUploadSetting.Cos.BucketURL"))
 	secretID := strings.TrimSpace(variable.ConfigYml.GetString("FileUploadSetting.Cos.SecretID"))

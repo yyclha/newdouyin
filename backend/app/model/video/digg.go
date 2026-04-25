@@ -171,6 +171,7 @@ func (v *DiggModel) HandleAsyncDiggEvent(event videodiggasync.VideoDiggEvent) er
 	return nil
 }
 
+// getVideoAuthorUID 执行对象方法逻辑。
 func (v *DiggModel) getVideoAuthorUID(awemeID int64) (int64, bool) {
 	var authorUID int64
 	if err := v.Raw(`SELECT author_user_id FROM tb_videos WHERE aweme_id = ? LIMIT 1`, awemeID).Scan(&authorUID).Error; err != nil {
@@ -184,6 +185,7 @@ func (v *DiggModel) getVideoAuthorUID(awemeID int64) (int64, bool) {
 	return authorUID, true
 }
 
+// prepareVideoDiggRedis 执行对象方法逻辑。
 func (v *DiggModel) prepareVideoDiggRedis(cache *interactionCache, uid, awemeID, authorUID int64) bool {
 	if _, err := cache.ensureDiggState(uid, awemeID); err != nil {
 		return false
@@ -199,6 +201,7 @@ func (v *DiggModel) prepareVideoDiggRedis(cache *interactionCache, uid, awemeID,
 	return true
 }
 
+// applyVideoDiggRedis 执行对象方法逻辑。
 func (v *DiggModel) applyVideoDiggRedis(cache *interactionCache, uid, awemeID, authorUID int64, action bool) (videoDiggRedisResult, error) {
 	client := cache.redisClient()
 	if client == nil {
@@ -255,6 +258,7 @@ func (v *DiggModel) applyVideoDiggRedis(cache *interactionCache, uid, awemeID, a
 	}, nil
 }
 
+// persistVideoDiggState 执行对象方法逻辑。
 func (v *DiggModel) persistVideoDiggState(uid, awemeID, authorUID int64, action bool) bool {
 	tx := v.DB.Begin()
 	if tx.Error != nil {

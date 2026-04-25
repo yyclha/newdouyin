@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 )
 
+// MD5 执行业务处理。
 func MD5(params string) string {
 	md5Ctx := md5.New()
 	md5Ctx.Write([]byte(params))

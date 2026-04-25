@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// CreateConsumer 执行业务处理。
 func CreateConsumer() (*consumer, error) {
 	// 获取配置信息
 

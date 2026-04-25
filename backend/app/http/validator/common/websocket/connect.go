@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Connect 定义业务数据结构。
 type Connect struct {
 	Token string `form:"token" json:"token" binding:"required,min=20"`
 }

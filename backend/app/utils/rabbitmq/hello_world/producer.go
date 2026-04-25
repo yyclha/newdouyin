@@ -34,6 +34,7 @@ type producer struct {
 	occurError error
 }
 
+// Send 执行对象方法逻辑。
 func (p *producer) Send(data string) bool {
 
 	// 获取一个通道

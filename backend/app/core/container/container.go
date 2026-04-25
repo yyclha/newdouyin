@@ -11,13 +11,16 @@ import (
 // 定义一个全局键值对存储容器
 var sMap sync.Map
 
+// Containers 定义业务数据结构。
 type Containers struct {
 }
 
+// CreateContainersFactory 执行业务处理。
 func CreateContainersFactory() *Containers {
 	return &Containers{}
 }
 
+// Set 执行对象方法逻辑。
 func (c *Containers) Set(key string, value interface{}) (res bool) {
 	if _, exists := c.KeyIsExists(key); exists == false {
 		sMap.Store(key, value)
@@ -32,6 +35,7 @@ func (c *Containers) Set(key string, value interface{}) (res bool) {
 	return
 }
 
+// Get 执行对象方法逻辑。
 func (c *Containers) Get(key string) interface{} {
 	if value, exists := c.KeyIsExists(key); exists {
 		return value
@@ -39,6 +43,7 @@ func (c *Containers) Get(key string) interface{} {
 	return nil
 }
 
+// KeyIsExists 执行对象方法逻辑。
 func (c *Containers) KeyIsExists(key string) (interface{}, bool) {
 	return sMap.Load(key)
 }

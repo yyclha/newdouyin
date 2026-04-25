@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// CreateConsumer 执行业务处理。
 func CreateConsumer(options ...OptionsConsumer) (*consumer, error) {
 	// 获取配置信息
 	conn, err := amqp.Dial(variable.ConfigYml.GetString("RabbitMq.PublishSubscribe.Addr"))

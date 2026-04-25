@@ -15,6 +15,7 @@ import (
 	"strings"
 )
 
+// UploadAvatar 执行业务处理。
 func UploadAvatar(context *gin.Context, savePath string) (r bool, finnalSavePath interface{}) {
 	file, _ := context.FormFile(variable.ConfigYml.GetString("FileUploadSetting.UploadFileField"))
 	var saveErr error
@@ -54,6 +55,7 @@ func UploadAvatar(context *gin.Context, savePath string) (r bool, finnalSavePath
 	return false, nil
 }
 
+// UploadCover 执行业务处理。
 func UploadCover(context *gin.Context, savePath string) (r bool, finnalSavePath interface{}) {
 	file, _ := context.FormFile(variable.ConfigYml.GetString("FileUploadSetting.UploadFileField"))
 	var saveErr error
@@ -93,6 +95,7 @@ func UploadCover(context *gin.Context, savePath string) (r bool, finnalSavePath 
 	return false, nil
 }
 
+// preparedVideoUploadInput 定义业务数据结构。
 type preparedVideoUploadInput struct {
 	Sequence         int64
 	UploadID         string
@@ -106,6 +109,7 @@ type preparedVideoUploadInput struct {
 	PrivateStatus    int
 }
 
+// buildVideoDescription 执行业务处理。
 func buildVideoDescription(description, tags string) string {
 	videoDesc := strings.TrimSpace(description)
 	tags = strings.TrimSpace(tags)
@@ -118,6 +122,7 @@ func buildVideoDescription(description, tags string) string {
 	return videoDesc + tags
 }
 
+// enqueuePreparedVideoUpload 执行业务处理。
 func enqueuePreparedVideoUpload(input preparedVideoUploadInput) (bool, interface{}, string) {
 	coverSavePath := variable.ConfigYml.GetString("FileUploadSetting.UploadRootPath") +
 		variable.ConfigYml.GetString("FileUploadSetting.VideoCoverUploadFileSavePath")
@@ -167,6 +172,7 @@ func enqueuePreparedVideoUpload(input preparedVideoUploadInput) (bool, interface
 	}, ""
 }
 
+// extractCoverFrame 执行业务处理。
 func extractCoverFrame(videoPath, coverPath string) error {
 	cmd := exec.Command("ffmpeg", "-y", "-i", videoPath, "-frames:v", "1", coverPath)
 	if err := cmd.Run(); err != nil {
@@ -175,6 +181,7 @@ func extractCoverFrame(videoPath, coverPath string) error {
 	return nil
 }
 
+// cleanupLocalFiles 执行业务处理。
 func cleanupLocalFiles(paths ...string) {
 	for _, filePath := range paths {
 		if strings.TrimSpace(filePath) == "" {

@@ -8,9 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// AllMsg 定义业务数据结构。
 type AllMsg struct {
 }
 
+// CheckParams 执行对象方法逻辑。
 func (a AllMsg) CheckParams(ctx *gin.Context) {
 	// 基本的参数验证
 	if err := ctx.ShouldBind(&a); err != nil {

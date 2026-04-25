@@ -43,8 +43,10 @@ func createCustomGormLog(sqlType string, options ...Options) gormLog.Interface {
 	return log
 }
 
+// logOutPut 定义业务数据结构。
 type logOutPut struct{}
 
+// Printf 执行对象方法逻辑。
 func (l logOutPut) Printf(strFormat string, args ...interface{}) {
 	logRes := fmt.Sprintf(strFormat, args...)
 	logFlag := "gorm_v2 日志:"
@@ -63,8 +65,11 @@ func (l logOutPut) Printf(strFormat string, args ...interface{}) {
 type Options interface {
 	apply(*logger)
 }
+
+// OptionFunc 定义业务数据结构。
 type OptionFunc func(log *logger)
 
+// apply 执行对象方法逻辑。
 func (f OptionFunc) apply(log *logger) {
 	f(log)
 }
@@ -76,35 +81,42 @@ func SetInfoStrFormat(format string) Options {
 	})
 }
 
+// SetWarnStrFormat 执行业务处理。
 func SetWarnStrFormat(format string) Options {
 	return OptionFunc(func(log *logger) {
 		log.warnStr = format
 	})
 }
 
+// SetErrStrFormat 执行业务处理。
 func SetErrStrFormat(format string) Options {
 	return OptionFunc(func(log *logger) {
 		log.errStr = format
 	})
 }
 
+// SetTraceStrFormat 执行业务处理。
 func SetTraceStrFormat(format string) Options {
 	return OptionFunc(func(log *logger) {
 		log.traceStr = format
 	})
 }
+
+// SetTracWarnStrFormat 执行业务处理。
 func SetTracWarnStrFormat(format string) Options {
 	return OptionFunc(func(log *logger) {
 		log.traceWarnStr = format
 	})
 }
 
+// SetTracErrStrFormat 执行业务处理。
 func SetTracErrStrFormat(format string) Options {
 	return OptionFunc(func(log *logger) {
 		log.traceErrStr = format
 	})
 }
 
+// logger 定义业务数据结构。
 type logger struct {
 	gormLog.Writer
 	gormLog.Config

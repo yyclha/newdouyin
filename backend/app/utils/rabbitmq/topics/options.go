@@ -18,6 +18,7 @@ type OptionsProd interface {
 // OptionFunc 以函数形式实现上面的接口
 type OptionFunc func(*producer)
 
+// apply 执行对象方法逻辑。
 func (f OptionFunc) apply(prod *producer) {
 	f(prod)
 }
@@ -46,6 +47,7 @@ type OptionsConsumer interface {
 // OptionsConsumerFunc 以函数形式实现上面的接口
 type OptionsConsumerFunc func(*consumer)
 
+// apply 执行对象方法逻辑。
 func (f OptionsConsumerFunc) apply(cons *consumer) {
 	f(cons)
 }

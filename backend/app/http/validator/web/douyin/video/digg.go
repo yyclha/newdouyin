@@ -8,11 +8,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// VideoDigg 定义业务数据结构。
 type VideoDigg struct {
 	AwemeID
 	Action
 }
 
+// CheckParams 执行对象方法逻辑。
 func (v VideoDigg) CheckParams(context *gin.Context) {
 	//1.基本的验证规则没有通过
 	if err := context.ShouldBind(&v); err != nil {

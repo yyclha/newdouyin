@@ -21,6 +21,7 @@ import (
 var lastChangeTime time.Time
 var containerFactory = container.CreateContainersFactory()
 
+// init 执行业务处理。
 func init() {
 	lastChangeTime = time.Now()
 }
@@ -51,6 +52,7 @@ func CreateYamlFactory(fileName ...string) interf.YmlConfigInterface {
 	}
 }
 
+// ymlConfig 定义业务数据结构。
 type ymlConfig struct {
 	viper *viper.Viper
 	mu    *sync.Mutex

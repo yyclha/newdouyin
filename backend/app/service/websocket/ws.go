@@ -13,10 +13,12 @@ import (
 	"strconv"
 )
 
+// Ws 定义业务数据结构。
 type Ws struct {
 	WsClient *core.Client
 }
 
+// Msg 定义业务数据结构。
 type Msg struct {
 	TxUid      string `json:"tx_uid"`      // 发送者 UID
 	RxUid      string `json:"rx_uid"`      // 接收者 UID

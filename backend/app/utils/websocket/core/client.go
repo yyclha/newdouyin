@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+// Client 定义业务数据结构。
 type Client struct {
 	Hub                *Hub            // 负责处理客户端注册、注销、在线管理
 	Conn               *websocket.Conn // 一个ws连接

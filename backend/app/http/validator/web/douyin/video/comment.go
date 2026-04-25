@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// VideoComment 定义业务数据结构。
 type VideoComment struct {
 	IpLocation
 	AwemeID
@@ -19,6 +20,7 @@ type VideoComment struct {
 	Avatar
 }
 
+// CheckParams 执行对象方法逻辑。
 func (v VideoComment) CheckParams(context *gin.Context) {
 	//1.基本的验证规则没有通过
 	if err := context.ShouldBind(&v); err != nil {

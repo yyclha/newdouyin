@@ -31,50 +31,62 @@ func newInteractionCache() *interactionCache {
 	return &interactionCache{}
 }
 
+// redisClient 执行对象方法逻辑。
 func (c *interactionCache) redisClient() *redis_factory.RedisClient {
 	return redis_factory.GetOneRedisClient()
 }
 
+// statsKey 执行对象方法逻辑。
 func (c *interactionCache) statsKey(awemeID int64) string {
 	return "video:stats:" + strconv.FormatInt(awemeID, 10)
 }
 
+// commentsIndexKey 执行对象方法逻辑。
 func (c *interactionCache) commentsIndexKey(awemeID int64) string {
 	return "video:comments:index:" + strconv.FormatInt(awemeID, 10)
 }
 
+// commentItemKey 执行对象方法逻辑。
 func (c *interactionCache) commentItemKey(commentID int64) string {
 	return "video:comments:item:" + strconv.FormatInt(commentID, 10)
 }
 
+// commentDiggUsersKey 执行对象方法逻辑。
 func (c *interactionCache) commentDiggUsersKey(commentID int64) string {
 	return "comment:digg:users:" + strconv.FormatInt(commentID, 10)
 }
 
+// diggUsersKey 执行对象方法逻辑。
 func (c *interactionCache) diggUsersKey(awemeID int64) string {
 	return "video:digg:users:" + strconv.FormatInt(awemeID, 10)
 }
 
+// userLikeVideosKey 执行对象方法逻辑。
 func (c *interactionCache) userLikeVideosKey(uid int64) string {
 	return "user:likes:" + strconv.FormatInt(uid, 10)
 }
 
+// userLikeIndexKey 执行对象方法逻辑。
 func (c *interactionCache) userLikeIndexKey(uid int64) string {
 	return "user:likes:index:" + strconv.FormatInt(uid, 10)
 }
 
+// userTotalFavoritedKey 执行对象方法逻辑。
 func (c *interactionCache) userTotalFavoritedKey(uid int64) string {
 	return "user:total_favorited:" + strconv.FormatInt(uid, 10)
 }
 
+// diggStateKey 执行对象方法逻辑。
 func (c *interactionCache) diggStateKey(uid, awemeID int64) string {
 	return "video:digg:state:" + strconv.FormatInt(uid, 10) + ":" + strconv.FormatInt(awemeID, 10)
 }
 
+// diggVersionKey 执行对象方法逻辑。
 func (c *interactionCache) diggVersionKey(uid, awemeID int64) string {
 	return "video:digg:version:" + strconv.FormatInt(uid, 10) + ":" + strconv.FormatInt(awemeID, 10)
 }
 
+// getStats 执行对象方法逻辑。
 func (c *interactionCache) getStats(awemeID int64) (model.Statistics, bool) {
 	client := c.redisClient()
 	if client == nil {
@@ -97,6 +109,7 @@ func (c *interactionCache) getStats(awemeID int64) (model.Statistics, bool) {
 	return stats, true
 }
 
+// setStats 执行对象方法逻辑。
 func (c *interactionCache) setStats(stats model.Statistics) {
 	client := c.redisClient()
 	if client == nil {
@@ -121,6 +134,7 @@ func (c *interactionCache) setStats(stats model.Statistics) {
 	_, _ = client.Execute("EXPIRE", key, videoStatsCacheTTLSeconds)
 }
 
+// loadStatsFromDB 执行对象方法逻辑。
 func (c *interactionCache) loadStatsFromDB(awemeID int64) (model.Statistics, bool) {
 	videoModel := CreateVideoFactory("")
 	stats := model.Statistics{}
@@ -136,6 +150,7 @@ func (c *interactionCache) loadStatsFromDB(awemeID int64) (model.Statistics, boo
 	return stats, true
 }
 
+// getOrLoadStats 执行对象方法逻辑。
 func (c *interactionCache) getOrLoadStats(awemeID int64) (model.Statistics, bool) {
 	if stats, ok := c.getStats(awemeID); ok {
 		return stats, true
@@ -143,6 +158,7 @@ func (c *interactionCache) getOrLoadStats(awemeID int64) (model.Statistics, bool
 	return c.loadStatsFromDB(awemeID)
 }
 
+// invalidateStats 执行对象方法逻辑。
 func (c *interactionCache) invalidateStats(awemeID int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -153,6 +169,7 @@ func (c *interactionCache) invalidateStats(awemeID int64) {
 	_, _ = client.Execute("DEL", c.statsKey(awemeID))
 }
 
+// incrStat 执行对象方法逻辑。
 func (c *interactionCache) incrStat(awemeID int64, field string, delta int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -174,6 +191,7 @@ func (c *interactionCache) incrStat(awemeID int64, field string, delta int64) {
 	_, _ = client.Execute("EXPIRE", key, videoStatsCacheTTLSeconds)
 }
 
+// normalizeStats 执行对象方法逻辑。
 func (c *interactionCache) normalizeStats(videoList []model.Video) {
 	for i := range videoList {
 		awemeID, err := strconv.ParseInt(videoList[i].AwemeID, 10, 64)
@@ -192,6 +210,7 @@ func (c *interactionCache) normalizeStats(videoList []model.Video) {
 	}
 }
 
+// getCommentsPage 执行对象方法逻辑。
 func (c *interactionCache) getCommentsPage(awemeID, start, pageSize, total int64) ([]Comment, bool) {
 	if start < 0 || pageSize <= 0 {
 		return nil, false
@@ -250,6 +269,7 @@ func (c *interactionCache) getCommentsPage(awemeID, start, pageSize, total int64
 	return comments, true
 }
 
+// getCommentItemWithClient 执行对象方法逻辑。
 func (c *interactionCache) getCommentItemWithClient(client *redis_factory.RedisClient, commentID int64) (Comment, bool) {
 	values, err := redis.StringMap(client.Execute("HGETALL", c.commentItemKey(commentID)))
 	if err != nil || len(values) == 0 {
@@ -258,6 +278,7 @@ func (c *interactionCache) getCommentItemWithClient(client *redis_factory.RedisC
 	return commentFromRedisMap(values), true
 }
 
+// setComments 执行对象方法逻辑。
 func (c *interactionCache) setComments(awemeID int64, comments []Comment) {
 	client := c.redisClient()
 	if client == nil {
@@ -285,6 +306,7 @@ func (c *interactionCache) setComments(awemeID int64, comments []Comment) {
 	_, _ = client.Execute("EXPIRE", indexKey, videoCommentsCacheTTLSeconds)
 }
 
+// setCommentItemWithClient 执行对象方法逻辑。
 func (c *interactionCache) setCommentItemWithClient(client *redis_factory.RedisClient, comment Comment) error {
 	if _, err := client.Execute(
 		"HMSET",
@@ -318,6 +340,7 @@ func (c *interactionCache) setCommentItemWithClient(client *redis_factory.RedisC
 	return nil
 }
 
+// prependComment 执行对象方法逻辑。
 func (c *interactionCache) prependComment(awemeID int64, comment Comment) {
 	client := c.redisClient()
 	if client == nil {
@@ -336,6 +359,7 @@ func (c *interactionCache) prependComment(awemeID int64, comment Comment) {
 	_, _ = client.Execute("EXPIRE", indexKey, videoCommentsCacheTTLSeconds)
 }
 
+// removeComment 执行对象方法逻辑。
 func (c *interactionCache) removeComment(awemeID, commentID int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -349,6 +373,7 @@ func (c *interactionCache) removeComment(awemeID, commentID int64) {
 	_, _ = client.Execute("EXPIRE", c.commentsIndexKey(awemeID), videoCommentsCacheTTLSeconds)
 }
 
+// invalidateCommentItem 执行对象方法逻辑。
 func (c *interactionCache) invalidateCommentItem(commentID int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -360,6 +385,7 @@ func (c *interactionCache) invalidateCommentItem(commentID int64) {
 	_, _ = client.Execute("DEL", c.commentDiggUsersKey(commentID))
 }
 
+// invalidateCommentList 执行对象方法逻辑。
 func (c *interactionCache) invalidateCommentList(awemeID int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -377,6 +403,7 @@ func (c *interactionCache) invalidateCommentList(awemeID int64) {
 	_, _ = client.Execute("DEL", indexKey)
 }
 
+// updateCommentDigg 执行对象方法逻辑。
 func (c *interactionCache) updateCommentDigg(awemeID, commentID, uid int64, action bool) {
 	client := c.redisClient()
 	if client == nil {
@@ -418,6 +445,7 @@ func (c *interactionCache) updateCommentDigg(awemeID, commentID, uid int64, acti
 	}
 }
 
+// getUserLikedVideos 执行对象方法逻辑。
 func (c *interactionCache) getUserLikedVideos(uid int64) ([]int64, bool) {
 	client := c.redisClient()
 	if client == nil {
@@ -440,6 +468,7 @@ func (c *interactionCache) getUserLikedVideos(uid int64) ([]int64, bool) {
 	return ids, true
 }
 
+// getUserLikedVideosPage 执行对象方法逻辑。
 func (c *interactionCache) getUserLikedVideosPage(uid, pageNo, pageSize int64) ([]int64, int64, bool) {
 	if pageNo < 0 || pageSize <= 0 {
 		return nil, 0, false
@@ -479,6 +508,7 @@ func (c *interactionCache) getUserLikedVideosPage(uid, pageNo, pageSize int64) (
 	return ids, total, true
 }
 
+// setUserLikedVideos 执行对象方法逻辑。
 func (c *interactionCache) setUserLikedVideos(uid int64, awemeIDs []int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -502,6 +532,7 @@ func (c *interactionCache) setUserLikedVideos(uid int64, awemeIDs []int64) {
 	_, _ = client.Execute("EXPIRE", key, videoUserLikesCacheTTLSeconds)
 }
 
+// setUserLikedVideosWithScores 执行对象方法逻辑。
 func (c *interactionCache) setUserLikedVideosWithScores(uid int64, items []userLikedVideoItem) {
 	client := c.redisClient()
 	if client == nil {
@@ -535,6 +566,7 @@ func (c *interactionCache) setUserLikedVideosWithScores(uid int64, items []userL
 	_, _ = client.Execute("EXPIRE", indexKey, videoUserLikesCacheTTLSeconds)
 }
 
+// addUserLikedVideo 执行对象方法逻辑。
 func (c *interactionCache) addUserLikedVideo(uid, awemeID int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -550,6 +582,7 @@ func (c *interactionCache) addUserLikedVideo(uid, awemeID int64) {
 	_, _ = client.Execute("EXPIRE", key, videoUserLikesCacheTTLSeconds)
 }
 
+// addUserLikedVideoAt 执行对象方法逻辑。
 func (c *interactionCache) addUserLikedVideoAt(uid, awemeID, createTime int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -571,6 +604,7 @@ func (c *interactionCache) addUserLikedVideoAt(uid, awemeID, createTime int64) {
 	_, _ = client.Execute("EXPIRE", indexKey, videoUserLikesCacheTTLSeconds)
 }
 
+// removeUserLikedVideo 执行对象方法逻辑。
 func (c *interactionCache) removeUserLikedVideo(uid, awemeID int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -591,6 +625,7 @@ func (c *interactionCache) removeUserLikedVideo(uid, awemeID int64) {
 	_, _ = client.Execute("EXPIRE", c.userLikeIndexKey(uid), videoUserLikesCacheTTLSeconds)
 }
 
+// isVideoLikedByUser 执行对象方法逻辑。
 func (c *interactionCache) isVideoLikedByUser(uid, awemeID int64) (bool, bool) {
 	client := c.redisClient()
 	if client == nil {
@@ -615,6 +650,7 @@ func (c *interactionCache) isVideoLikedByUser(uid, awemeID int64) (bool, bool) {
 	return false, false
 }
 
+// addDiggUser 执行对象方法逻辑。
 func (c *interactionCache) addDiggUser(awemeID, uid int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -629,6 +665,7 @@ func (c *interactionCache) addDiggUser(awemeID, uid int64) {
 	_, _ = client.Execute("EXPIRE", c.diggUsersKey(awemeID), videoUserLikesCacheTTLSeconds)
 }
 
+// removeDiggUser 执行对象方法逻辑。
 func (c *interactionCache) removeDiggUser(awemeID, uid int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -643,6 +680,7 @@ func (c *interactionCache) removeDiggUser(awemeID, uid int64) {
 	_, _ = client.Execute("EXPIRE", c.diggUsersKey(awemeID), videoUserLikesCacheTTLSeconds)
 }
 
+// addCommentDiggUser 执行对象方法逻辑。
 func (c *interactionCache) addCommentDiggUser(commentID, uid int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -657,6 +695,7 @@ func (c *interactionCache) addCommentDiggUser(commentID, uid int64) {
 	_, _ = client.Execute("EXPIRE", c.commentDiggUsersKey(commentID), videoUserLikesCacheTTLSeconds)
 }
 
+// removeCommentDiggUser 执行对象方法逻辑。
 func (c *interactionCache) removeCommentDiggUser(commentID, uid int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -671,6 +710,7 @@ func (c *interactionCache) removeCommentDiggUser(commentID, uid int64) {
 	_, _ = client.Execute("EXPIRE", c.commentDiggUsersKey(commentID), videoUserLikesCacheTTLSeconds)
 }
 
+// loadUserTotalFavorited 执行对象方法逻辑。
 func (c *interactionCache) loadUserTotalFavorited(uid int64) (int64, bool) {
 	videoModel := CreateVideoFactory("")
 	var total int64
@@ -692,6 +732,7 @@ func (c *interactionCache) loadUserTotalFavorited(uid int64) (int64, bool) {
 	return total, true
 }
 
+// getUserTotalFavorited 执行对象方法逻辑。
 func (c *interactionCache) getUserTotalFavorited(uid int64) (int64, bool) {
 	client := c.redisClient()
 	if client == nil {
@@ -706,6 +747,7 @@ func (c *interactionCache) getUserTotalFavorited(uid int64) (int64, bool) {
 	return 0, false
 }
 
+// incrUserTotalFavorited 执行对象方法逻辑。
 func (c *interactionCache) incrUserTotalFavorited(uid, delta int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -721,6 +763,7 @@ func (c *interactionCache) incrUserTotalFavorited(uid, delta int64) {
 	_, _ = client.Execute("EXPIRE", key, videoStatsCacheTTLSeconds)
 }
 
+// ensureDiggState 执行对象方法逻辑。
 func (c *interactionCache) ensureDiggState(uid, awemeID int64) (bool, error) {
 	client := c.redisClient()
 	if client == nil {
@@ -752,6 +795,7 @@ func (c *interactionCache) ensureDiggState(uid, awemeID int64) (bool, error) {
 	return true, nil
 }
 
+// getDiggVersion 执行对象方法逻辑。
 func (c *interactionCache) getDiggVersion(uid, awemeID int64) (int64, bool) {
 	client := c.redisClient()
 	if client == nil {
@@ -766,6 +810,7 @@ func (c *interactionCache) getDiggVersion(uid, awemeID int64) (int64, bool) {
 	return version, true
 }
 
+// parseInt64 执行业务处理。
 func parseInt64(value string) int64 {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -778,6 +823,7 @@ func parseInt64(value string) int64 {
 	return parsed
 }
 
+// parseInt 执行业务处理。
 func parseInt(value string) int {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -790,11 +836,13 @@ func parseInt(value string) int {
 	return parsed
 }
 
+// parseBool 执行业务处理。
 func parseBool(value string) bool {
 	value = strings.TrimSpace(strings.ToLower(value))
 	return value == "1" || value == "true"
 }
 
+// boolToInt 执行业务处理。
 func boolToInt(value bool) int {
 	if value {
 		return 1
@@ -802,6 +850,7 @@ func boolToInt(value bool) int {
 	return 0
 }
 
+// commentFromRedisMap 执行业务处理。
 func commentFromRedisMap(values map[string]string) Comment {
 	return Comment{
 		CommentID:       parseInt64(values["comment_id"]),
@@ -827,6 +876,7 @@ func commentFromRedisMap(values map[string]string) Comment {
 	}
 }
 
+// buildCommentForCache 执行业务处理。
 func buildCommentForCache(uid, awemeID int64, ipLocation, content string, shortID int64, uniqueID, signature, nickname, avatar string, createTime int64, commentID int64) Comment {
 	return Comment{
 		CommentID:       commentID,
@@ -852,6 +902,7 @@ func buildCommentForCache(uid, awemeID int64, ipLocation, content string, shortI
 	}
 }
 
+// currentUnix 执行业务处理。
 func currentUnix() int64 {
 	return time.Now().Unix()
 }

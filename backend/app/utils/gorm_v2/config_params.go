@@ -8,6 +8,8 @@ type ConfigParams struct {
 	Write ConfigParamsDetail
 	Read  ConfigParamsDetail
 }
+
+// ConfigParamsDetail 定义业务数据结构。
 type ConfigParamsDetail struct {
 	Host     string
 	DataBase string

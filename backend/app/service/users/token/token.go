@@ -19,6 +19,7 @@ func CreateUserFactory() *userToken {
 	}
 }
 
+// userToken 定义业务数据结构。
 type userToken struct {
 	userJwt *my_jwt.JwtSign
 }
@@ -49,6 +50,7 @@ func (u *userToken) ParseToken(tokenStr string) (CustomClaims my_jwt.CustomClaim
 	}
 }
 
+// isNotExpired 执行对象方法逻辑。
 func (u *userToken) isNotExpired(token string, expireAtSec int64) (*my_jwt.CustomClaims, int) {
 	if customClaims, err := u.userJwt.ParseToken(token); err == nil {
 		if time.Now().Unix()-(customClaims.ExpiresAt+expireAtSec) < 0 {

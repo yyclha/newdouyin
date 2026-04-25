@@ -9,12 +9,14 @@ import (
 	"strconv"
 )
 
+// videoChunkStateStore 定义业务数据结构。
 type videoChunkStateStore struct {
 	redisClient       *redis_factory.RedisClient
 	uploadedChunksKey string
 	chunkHashesKey    string
 }
 
+// createVideoChunkStateStore 执行业务处理。
 func createVideoChunkStateStore(uploadID string, uid int64) *videoChunkStateStore {
 	redisClient := redis_factory.GetOneRedisClient()
 	if redisClient == nil {
@@ -29,6 +31,7 @@ func createVideoChunkStateStore(uploadID string, uid int64) *videoChunkStateStor
 	}
 }
 
+// Release 执行对象方法逻辑。
 func (store *videoChunkStateStore) Release() {
 	if store == nil || store.redisClient == nil {
 		return
@@ -36,6 +39,7 @@ func (store *videoChunkStateStore) Release() {
 	store.redisClient.ReleaseOneRedisClient()
 }
 
+// SetUploadedChunk 执行对象方法逻辑。
 func (store *videoChunkStateStore) SetUploadedChunk(chunkIndex int, chunkHash string, ttlSeconds int64) error {
 	if _, err := store.redisClient.Execute("SADD", store.uploadedChunksKey, chunkIndex); err != nil {
 		return err
@@ -48,6 +52,7 @@ func (store *videoChunkStateStore) SetUploadedChunk(chunkIndex int, chunkHash st
 	return store.RefreshTTL(ttlSeconds)
 }
 
+// GetUploadedChunks 执行对象方法逻辑。
 func (store *videoChunkStateStore) GetUploadedChunks() ([]int, error) {
 	values, err := store.redisClient.Strings(store.redisClient.Execute("SMEMBERS", store.uploadedChunksKey))
 	if err != nil {
@@ -70,6 +75,7 @@ func (store *videoChunkStateStore) GetUploadedChunks() ([]int, error) {
 	return indexes, nil
 }
 
+// GetChunkHashes 执行对象方法逻辑。
 func (store *videoChunkStateStore) GetChunkHashes() (map[int]string, error) {
 	values, err := redis.StringMap(store.redisClient.Execute("HGETALL", store.chunkHashesKey))
 	if err != nil {
@@ -91,6 +97,7 @@ func (store *videoChunkStateStore) GetChunkHashes() (map[int]string, error) {
 	return hashes, nil
 }
 
+// RemoveChunk 执行对象方法逻辑。
 func (store *videoChunkStateStore) RemoveChunk(chunkIndex int) error {
 	if _, err := store.redisClient.Execute("SREM", store.uploadedChunksKey, chunkIndex); err != nil && err != redis.ErrNil {
 		return err
@@ -101,11 +108,13 @@ func (store *videoChunkStateStore) RemoveChunk(chunkIndex int) error {
 	return nil
 }
 
+// Clear 执行对象方法逻辑。
 func (store *videoChunkStateStore) Clear() error {
 	_, err := store.redisClient.Execute("DEL", store.uploadedChunksKey, store.chunkHashesKey)
 	return err
 }
 
+// RefreshTTL 执行对象方法逻辑。
 func (store *videoChunkStateStore) RefreshTTL(ttlSeconds int64) error {
 	if ttlSeconds <= 0 {
 		return nil

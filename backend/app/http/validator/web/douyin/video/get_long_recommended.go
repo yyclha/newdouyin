@@ -8,11 +8,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// GetLongVideoRecommended 定义业务数据结构。
 type GetLongVideoRecommended struct {
 	PageNo
 	PageSize
 }
 
+// CheckParams 执行对象方法逻辑。
 func (g GetLongVideoRecommended) CheckParams(context *gin.Context) {
 	//1.基本的验证规则没有通过
 	if err := context.ShouldBind(&g); err != nil {

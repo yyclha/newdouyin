@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// YmlConfigInterface 定义业务数据结构。
 type YmlConfigInterface interface {
 	ConfigFileChangeListen()
 	Clone(fileName string) YmlConfigInterface

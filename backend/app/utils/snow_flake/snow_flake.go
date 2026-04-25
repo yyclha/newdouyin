@@ -17,6 +17,7 @@ func CreateSnowflakeFactory() snowflake_interf.InterfaceSnowFlake {
 	}
 }
 
+// snowflake 定义业务数据结构。
 type snowflake struct {
 	sync.Mutex
 	timestamp int64

@@ -8,11 +8,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// UpdateInfo 定义业务数据结构。
 type UpdateInfo struct {
 	OperationType
 	Data
 }
 
+// CheckParams 执行对象方法逻辑。
 func (u UpdateInfo) CheckParams(ctx *gin.Context) {
 	if err := ctx.ShouldBind(&u); err != nil {
 		response.ValidatorError(ctx, err)

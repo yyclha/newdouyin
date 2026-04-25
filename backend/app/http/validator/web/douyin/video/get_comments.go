@@ -8,12 +8,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// GetComments 定义业务数据结构。
 type GetComments struct {
 	AwemeID
 	PageNo   *float64 `form:"pageNo" json:"pageNo" binding:"omitempty,min=0"`
 	PageSize *float64 `form:"pageSize" json:"pageSize" binding:"omitempty,min=1,max=100"`
 }
 
+// CheckParams 执行对象方法逻辑。
 func (g GetComments) CheckParams(context *gin.Context) {
 	//1.基本的验证规则没有通过
 	if err := context.ShouldBind(&g); err != nil {

@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// CreateUsersTokenCacheFactory 执行业务处理。
 func CreateUsersTokenCacheFactory(uid int64) *userTokenCacheRedis {
 	redCli := redis_factory.GetOneRedisClient()
 	if redCli == nil {
@@ -18,6 +19,7 @@ func CreateUsersTokenCacheFactory(uid int64) *userTokenCacheRedis {
 	return &userTokenCacheRedis{redisClient: redCli, userTokenKey: "token_userid_" + strconv.FormatInt(uid, 10)}
 }
 
+// userTokenCacheRedis 定义业务数据结构。
 type userTokenCacheRedis struct {
 	redisClient  *redis_factory.RedisClient
 	userTokenKey string

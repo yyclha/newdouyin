@@ -26,6 +26,7 @@ const (
 	defaultVideoChunkStateTTLSeconds = 86400
 )
 
+// videoChunkUploadMeta 定义业务数据结构。
 type videoChunkUploadMeta struct {
 	UploadID      string `json:"upload_id"`
 	UID           int64  `json:"uid"`
@@ -44,6 +45,7 @@ type videoChunkUploadMeta struct {
 	UpdatedAt     int64  `json:"updated_at"`
 }
 
+// InitVideoChunkUpload 执行业务处理。
 func InitVideoChunkUpload(context *gin.Context) (r bool, finalSavePath interface{}, message string) {
 	uploadID := strings.TrimSpace(context.GetString(consts.ValidatorPrefix + "upload_id"))
 	if uploadID == "" {
@@ -126,6 +128,7 @@ func InitVideoChunkUpload(context *gin.Context) (r bool, finalSavePath interface
 	return true, buildVideoChunkInitResponse(meta, []int{}), ""
 }
 
+// SaveVideoChunk 执行业务处理。
 func SaveVideoChunk(context *gin.Context) (r bool, finalSavePath interface{}, message string) {
 	uploadID := strings.TrimSpace(context.GetString(consts.ValidatorPrefix + "upload_id"))
 	chunkIndex := int(context.GetFloat64(consts.ValidatorPrefix + "chunk_index"))
@@ -255,6 +258,7 @@ func SaveVideoChunk(context *gin.Context) (r bool, finalSavePath interface{}, me
 	}, ""
 }
 
+// CompleteVideoChunkUpload 执行业务处理。
 func CompleteVideoChunkUpload(context *gin.Context, savePath string) (r bool, finalSavePath interface{}, message string) {
 	uploadID := strings.TrimSpace(context.GetString(consts.ValidatorPrefix + "upload_id"))
 	if uploadID == "" {
@@ -362,6 +366,7 @@ func CompleteVideoChunkUpload(context *gin.Context, savePath string) (r bool, fi
 	return true, payload, ""
 }
 
+// validateVideoChunkMeta 执行业务处理。
 func validateVideoChunkMeta(meta videoChunkUploadMeta) error {
 	if meta.FileName == "" {
 		return fmt.Errorf("file_name is required")
@@ -389,6 +394,7 @@ func validateVideoChunkMeta(meta videoChunkUploadMeta) error {
 	return nil
 }
 
+// validateVideoChunkHash 执行业务处理。
 func validateVideoChunkHash(chunkHash string) error {
 	if chunkHash == "" {
 		return fmt.Errorf("chunk_hash is required")
@@ -404,10 +410,12 @@ func validateVideoChunkHash(chunkHash string) error {
 	return nil
 }
 
+// normalizeVideoChunkHash 执行业务处理。
 func normalizeVideoChunkHash(chunkHash string) string {
 	return strings.ToLower(strings.TrimSpace(chunkHash))
 }
 
+// buildVideoChunkInitResponse 执行业务处理。
 func buildVideoChunkInitResponse(meta videoChunkUploadMeta, uploadedChunks []int) gin.H {
 	return gin.H{
 		"uploadId":       meta.UploadID,
@@ -421,15 +429,18 @@ func buildVideoChunkInitResponse(meta videoChunkUploadMeta, uploadedChunks []int
 	}
 }
 
+// videoChunkSessionDir 执行业务处理。
 func videoChunkSessionDir(uploadID string, uid int64) string {
 	rootPath := variable.ConfigYml.GetString("FileUploadSetting.UploadRootPath")
 	return filepath.Join(rootPath, videoChunkSessionDirName, fmt.Sprintf("%d_%s", uid, md5_encrypt.MD5(uploadID)))
 }
 
+// videoChunkFileName 执行业务处理。
 func videoChunkFileName(chunkIndex int) string {
 	return "chunk-" + fmt.Sprintf("%06d", chunkIndex) + ".part"
 }
 
+// generateVideoChunkUploadID 执行业务处理。
 func generateVideoChunkUploadID() string {
 	if variable.SnowFlake != nil {
 		if sequence := variable.SnowFlake.GetId(); sequence > 0 {
@@ -439,6 +450,7 @@ func generateVideoChunkUploadID() string {
 	return "upload-" + strings.ReplaceAll(uuid.NewString(), "-", "")
 }
 
+// readVideoChunkMeta 执行业务处理。
 func readVideoChunkMeta(metaPath string) (videoChunkUploadMeta, error) {
 	var meta videoChunkUploadMeta
 	data, err := os.ReadFile(metaPath)
@@ -449,6 +461,7 @@ func readVideoChunkMeta(metaPath string) (videoChunkUploadMeta, error) {
 	return meta, err
 }
 
+// writeVideoChunkMeta 执行业务处理。
 func writeVideoChunkMeta(metaPath string, meta videoChunkUploadMeta) error {
 	data, err := json.Marshal(meta)
 	if err != nil {
@@ -457,6 +470,7 @@ func writeVideoChunkMeta(metaPath string, meta videoChunkUploadMeta) error {
 	return os.WriteFile(metaPath, data, 0644)
 }
 
+// expectedVideoChunkSize 执行业务处理。
 func expectedVideoChunkSize(meta videoChunkUploadMeta, chunkIndex int) int64 {
 	if chunkIndex < 0 || chunkIndex >= meta.TotalChunks || meta.ChunkSize <= 0 {
 		return 0
@@ -469,6 +483,7 @@ func expectedVideoChunkSize(meta videoChunkUploadMeta, chunkIndex int) int64 {
 	return meta.ChunkSize
 }
 
+// listValidUploadedChunkIndexes 执行业务处理。
 func listValidUploadedChunkIndexes(meta videoChunkUploadMeta, chunkDir string) ([]int, error) {
 	entries, err := os.ReadDir(chunkDir)
 	if err != nil {
@@ -509,6 +524,7 @@ func listValidUploadedChunkIndexes(meta videoChunkUploadMeta, chunkDir string) (
 	return indexes, nil
 }
 
+// reconcileVideoChunkState 执行业务处理。
 func reconcileVideoChunkState(meta videoChunkUploadMeta, chunkDir string, stateStore *videoChunkStateStore) ([]int, error) {
 	redisChunks, err := stateStore.GetUploadedChunks()
 	if err != nil {
@@ -562,6 +578,7 @@ func reconcileVideoChunkState(meta videoChunkUploadMeta, chunkDir string, stateS
 	return uploadedChunks, nil
 }
 
+// collectVerifiedVideoChunks 执行业务处理。
 func collectVerifiedVideoChunks(meta videoChunkUploadMeta, chunkDir string, expectedHashes map[int]string) ([]int, map[int]string, []int, error) {
 	uploadedChunks, err := listValidUploadedChunkIndexes(meta, chunkDir)
 	if err != nil {
@@ -596,6 +613,7 @@ func collectVerifiedVideoChunks(meta videoChunkUploadMeta, chunkDir string, expe
 	return verifiedChunks, verifiedHashes, invalidChunks, nil
 }
 
+// missingVideoChunkIndexes 执行业务处理。
 func missingVideoChunkIndexes(totalChunks int, uploadedChunks []int) []int {
 	if totalChunks <= 0 {
 		return []int{}
@@ -613,6 +631,7 @@ func missingVideoChunkIndexes(totalChunks int, uploadedChunks []int) []int {
 	return missing
 }
 
+// calculateFileSHA256 执行业务处理。
 func calculateFileSHA256(filePath string) (hash string, size int64, err error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -631,6 +650,7 @@ func calculateFileSHA256(filePath string) (hash string, size int64, err error) {
 	return hex.EncodeToString(hasher.Sum(nil)), written, nil
 }
 
+// persistVerifiedChunk 执行业务处理。
 func persistVerifiedChunk(tempChunkPath, chunkPath, expectedHash string) (bool, error) {
 	if _, err := os.Stat(chunkPath); err == nil {
 		existingHash, _, hashErr := calculateFileSHA256(chunkPath)
@@ -656,6 +676,7 @@ func persistVerifiedChunk(tempChunkPath, chunkPath, expectedHash string) (bool, 
 	return true, nil
 }
 
+// videoChunkStateTTLSeconds 执行业务处理。
 func videoChunkStateTTLSeconds() int64 {
 	ttl := variable.ConfigYml.GetInt64("FileUploadSetting.VideoChunkStateTTL")
 	if ttl <= 0 {
@@ -664,6 +685,7 @@ func videoChunkStateTTLSeconds() int64 {
 	return ttl
 }
 
+// mergeVideoChunks 执行业务处理。
 func mergeVideoChunks(targetPath, chunkDir string, totalChunks int) error {
 	targetFile, err := os.Create(targetPath)
 	if err != nil {

@@ -40,6 +40,7 @@ func CreateCommentFactory(sqlType string) *CommentModel {
 	return &CommentModel{DB: model.UseDbConn(sqlType)}
 }
 
+// commentSelectFields 执行业务处理。
 func commentSelectFields() string {
 	return `
 		SELECT
@@ -127,6 +128,7 @@ func (c *CommentModel) GetComments(awemeID, currentUID, pageNo, pageSize int64) 
 	return comments, total, hasMore, true
 }
 
+// loadRecentCommentsForCache 执行对象方法逻辑。
 func (c *CommentModel) loadRecentCommentsForCache(awemeID int64) (comments []Comment, ok bool) {
 	sql := commentSelectFields() + `
 		WHERE tc.aweme_id = ?
@@ -141,6 +143,7 @@ func (c *CommentModel) loadRecentCommentsForCache(awemeID int64) (comments []Com
 	return comments, true
 }
 
+// commentAuthorProfile 定义业务数据结构。
 type commentAuthorProfile struct {
 	ShortID   int64  `json:"short_id"`
 	UniqueID  string `json:"unique_id"`
@@ -149,10 +152,12 @@ type commentAuthorProfile struct {
 	Avatar    string `json:"avatar_small"`
 }
 
+// avatarPayload 定义业务数据结构。
 type avatarPayload struct {
 	URLList []string `json:"url_list"`
 }
 
+// loadCommentAuthorProfile 执行对象方法逻辑。
 func (c *CommentModel) loadCommentAuthorProfile(uid int64) (profile commentAuthorProfile, ok bool) {
 	sql := `
 		SELECT
@@ -172,6 +177,7 @@ func (c *CommentModel) loadCommentAuthorProfile(uid int64) (profile commentAutho
 	return profile, true
 }
 
+// parseAvatarURL 执行业务处理。
 func parseAvatarURL(raw string) string {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -191,6 +197,7 @@ func parseAvatarURL(raw string) string {
 	return strings.TrimSpace(payload.URLList[0])
 }
 
+// markCommentsUserDigged 执行对象方法逻辑。
 func (c *CommentModel) markCommentsUserDigged(comments []Comment, currentUID int64) {
 	if currentUID <= 0 || len(comments) == 0 {
 		return

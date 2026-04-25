@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// CreateZapFactory 执行业务处理。
 func CreateZapFactory(entry func(zapcore.Entry) error) *zap.Logger {
 
 	// 获取程序所处的模式：  开发调试 、 生产

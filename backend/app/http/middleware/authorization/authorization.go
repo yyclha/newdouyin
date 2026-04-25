@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// HeaderParams 定义业务数据结构。
 type HeaderParams struct {
 	Token string `header:"Token" binding:"required,min=20"`
 }

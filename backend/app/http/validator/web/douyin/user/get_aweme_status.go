@@ -8,9 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// AwemeStatus 定义业务数据结构。
 type AwemeStatus struct {
 }
 
+// CheckParams 执行对象方法逻辑。
 func (a AwemeStatus) CheckParams(context *gin.Context) {
 	//1.基本的验证规则没有通过
 	if err := context.ShouldBind(&a); err != nil {

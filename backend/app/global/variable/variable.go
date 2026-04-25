@@ -43,6 +43,7 @@ var (
 	SystemEditKey   = "system_menu_edit"
 )
 
+// init 执行业务处理。
 func init() {
 	// 1.初始化程序根目录
 	if path, err := os.Getwd(); err == nil {
@@ -52,6 +53,7 @@ func init() {
 	}
 }
 
+// findProjectBasePath 执行业务处理。
 func findProjectBasePath(startPath string) string {
 	currentPath, err := filepath.Abs(startPath)
 	if err != nil {

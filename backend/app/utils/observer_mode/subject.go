@@ -33,11 +33,13 @@ func (s *Subject) Notify() {
 	s.Observers = l_temp
 }
 
+// BroadCast 执行对象方法逻辑。
 func (s *Subject) BroadCast(args ...interface{}) {
 	s.params = args
 	s.Notify()
 }
 
+// GetParams 执行对象方法逻辑。
 func (s *Subject) GetParams() interface{} {
 	return s.params
 }

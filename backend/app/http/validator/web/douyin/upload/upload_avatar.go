@@ -12,9 +12,11 @@ import (
 	"strings"
 )
 
+// Avatar 定义业务数据结构。
 type Avatar struct {
 }
 
+// CheckParams 执行对象方法逻辑。
 func (a Avatar) CheckParams(ctx *gin.Context) {
 	tmpFile, err := ctx.FormFile(variable.ConfigYml.GetString("FileUploadSetting.UploadFileField")) //  file 是一个文件结构体（文件对象）
 	var isPass bool

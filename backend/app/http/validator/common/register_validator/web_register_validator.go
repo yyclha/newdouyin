@@ -12,6 +12,7 @@ import (
 	"douyin-backend/app/http/validator/web/douyin/video"
 )
 
+// WebRegisterValidator 执行业务处理。
 func WebRegisterValidator() {
 	containers := container.CreateContainersFactory()
 

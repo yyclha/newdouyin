@@ -49,14 +49,17 @@ type PersistedVideoUploadTask struct {
 	UpdatedAt        int64  `gorm:"column:updated_at" json:"updatedAt"`
 }
 
+// TableName 执行对象方法逻辑。
 func (PersistedVideoUploadTask) TableName() string {
 	return "video_upload_tasks"
 }
 
+// videoUploadTaskDB 执行业务处理。
 func videoUploadTaskDB() *gorm.DB {
 	return model.UseDbConn("")
 }
 
+// videoUploadMaxRetries 执行业务处理。
 func videoUploadMaxRetries() int {
 	maxRetries := variable.ConfigYml.GetInt("FileUploadSetting.VideoAsync.MaxRetries")
 	if maxRetries <= 0 {
@@ -65,6 +68,7 @@ func videoUploadMaxRetries() int {
 	return maxRetries
 }
 
+// videoUploadProcessingTimeoutSeconds 执行业务处理。
 func videoUploadProcessingTimeoutSeconds() int64 {
 	timeoutSeconds := variable.ConfigYml.GetInt64("FileUploadSetting.VideoAsync.ProcessingTimeoutSeconds")
 	if timeoutSeconds <= 0 {
@@ -73,6 +77,7 @@ func videoUploadProcessingTimeoutSeconds() int64 {
 	return timeoutSeconds
 }
 
+// createVideoUploadTask 执行业务处理。
 func createVideoUploadTask(task VideoUploadTask) (*PersistedVideoUploadTask, error) {
 	db := videoUploadTaskDB()
 	if db == nil {
@@ -120,6 +125,7 @@ func createVideoUploadTask(task VideoUploadTask) (*PersistedVideoUploadTask, err
 	return &record, nil
 }
 
+// getVideoUploadTaskForUser 执行业务处理。
 func getVideoUploadTaskForUser(taskID string, uid int64) (*PersistedVideoUploadTask, error) {
 	db := videoUploadTaskDB()
 	if db == nil {
@@ -134,6 +140,7 @@ func getVideoUploadTaskForUser(taskID string, uid int64) (*PersistedVideoUploadT
 	return &task, nil
 }
 
+// getVideoUploadTaskByUploadIDForUser 执行业务处理。
 func getVideoUploadTaskByUploadIDForUser(uploadID string, uid int64) (*PersistedVideoUploadTask, error) {
 	db := videoUploadTaskDB()
 	if db == nil {
@@ -148,6 +155,7 @@ func getVideoUploadTaskByUploadIDForUser(uploadID string, uid int64) (*Persisted
 	return &task, nil
 }
 
+// buildVideoUploadTaskResponse 执行业务处理。
 func buildVideoUploadTaskResponse(task *PersistedVideoUploadTask) gin.H {
 	return gin.H{
 		"taskId":        task.TaskID,
@@ -166,6 +174,7 @@ func buildVideoUploadTaskResponse(task *PersistedVideoUploadTask) gin.H {
 	}
 }
 
+// GetVideoUploadTaskStatus 执行业务处理。
 func GetVideoUploadTaskStatus(context *gin.Context) (bool, interface{}, string) {
 	taskID := strings.TrimSpace(context.GetString(consts.ValidatorPrefix + "task_id"))
 	if taskID == "" {
@@ -183,6 +192,7 @@ func GetVideoUploadTaskStatus(context *gin.Context) (bool, interface{}, string) 
 	return true, buildVideoUploadTaskResponse(task), ""
 }
 
+// claimNextVideoUploadTask 执行业务处理。
 func claimNextVideoUploadTask() (*PersistedVideoUploadTask, error) {
 	db := videoUploadTaskDB()
 	if db == nil {
@@ -243,6 +253,7 @@ func claimNextVideoUploadTask() (*PersistedVideoUploadTask, error) {
 	return &task, nil
 }
 
+// markVideoUploadTaskSucceeded 执行业务处理。
 func markVideoUploadTaskSucceeded(task *PersistedVideoUploadTask, playAddr, coverAddr string) error {
 	db := videoUploadTaskDB()
 	if db == nil {
@@ -260,6 +271,7 @@ func markVideoUploadTaskSucceeded(task *PersistedVideoUploadTask, playAddr, cove
 		}).Error
 }
 
+// markVideoUploadTaskFailed 执行业务处理。
 func markVideoUploadTaskFailed(task *PersistedVideoUploadTask, err error) error {
 	db := videoUploadTaskDB()
 	if db == nil {
@@ -285,6 +297,7 @@ func markVideoUploadTaskFailed(task *PersistedVideoUploadTask, err error) error 
 		}).Error
 }
 
+// minInt 执行业务处理。
 func minInt(a, b int) int {
 	if a < b {
 		return a
