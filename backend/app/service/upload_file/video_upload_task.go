@@ -45,8 +45,8 @@ type PersistedVideoUploadTask struct {
 	PrivateStatus    int    `gorm:"column:private_status" json:"privateStatus"`
 	PlayAddr         string `gorm:"column:play_addr" json:"playAddr"`
 	CoverAddr        string `gorm:"column:cover_addr" json:"coverAddr"`
-	CreatedAt        int64  `gorm:"column:created_at" json:"createdAt"`
-	UpdatedAt        int64  `gorm:"column:updated_at" json:"updatedAt"`
+	CreatedUnix      int64  `gorm:"column:created_at" json:"createdAt"`
+	UpdatedUnix      int64  `gorm:"column:updated_at" json:"updatedAt"`
 }
 
 // TableName 执行对象方法逻辑。
@@ -141,8 +141,8 @@ func createVideoUploadTask(task VideoUploadTask) (*PersistedVideoUploadTask, err
 		ContentType:      task.ContentType,
 		VideoDesc:        task.VideoDesc,
 		PrivateStatus:    task.PrivateStatus,
-		CreatedAt:        now,
-		UpdatedAt:        now,
+		CreatedUnix:      now,
+		UpdatedUnix:      now,
 	}
 
 	err := db.Transaction(func(tx *gorm.DB) error {
@@ -214,8 +214,8 @@ func buildVideoUploadTaskResponse(task *PersistedVideoUploadTask) gin.H {
 		"privateStatus": task.PrivateStatus,
 		"playAddr":      task.PlayAddr,
 		"coverAddr":     task.CoverAddr,
-		"createdAt":     task.CreatedAt,
-		"updatedAt":     task.UpdatedAt,
+		"createdAt":     task.CreatedUnix,
+		"updatedAt":     task.UpdatedUnix,
 	}
 }
 
@@ -292,7 +292,7 @@ func claimNextVideoUploadTask() (*PersistedVideoUploadTask, error) {
 		}
 		task.Status = VideoUploadTaskStatusProcessing
 		task.ErrorMessage = ""
-		task.UpdatedAt = now
+		task.UpdatedUnix = now
 		return nil
 	})
 	if err != nil {
