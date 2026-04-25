@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// UseDbConn 返回指定数据库类型对应的 Gorm 连接实例。
 func UseDbConn(sqlType string) *gorm.DB {
 	var db *gorm.DB
 	sqlType = strings.Trim(sqlType, " ") //修建整齐防止 “mysql ”情况

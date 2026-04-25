@@ -7,6 +7,7 @@ import (
 
 // 本文件专门处理 token 缓存到 redis 的相关逻辑
 
+// ValidTokenCacheToRedis 将当前用户的有效登录 Token 刷新到 Redis 中。
 func (u *UserModel) ValidTokenCacheToRedis(uid int64) {
 	tokenCacheRedisFactory := token_cache_redis.CreateUsersTokenCacheFactory(uid)
 	if tokenCacheRedisFactory == nil {

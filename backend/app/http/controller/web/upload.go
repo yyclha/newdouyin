@@ -8,9 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// UploadController 处理头像、封面和视频上传相关接口。
 type UploadController struct {
 }
 
+// Avatar 上传用户头像文件。
 func (u *UploadController) Avatar(ctx *gin.Context) {
 	savePath := variable.ConfigYml.GetString("FileUploadSetting.UploadRootPath") + variable.ConfigYml.GetString("FileUploadSetting.AvatarSmallUploadFileSavePath")
 	if r, finnalSavePath := upload_file.UploadAvatar(ctx, savePath); r == true {
@@ -21,6 +23,7 @@ func (u *UploadController) Avatar(ctx *gin.Context) {
 
 }
 
+// Cover 上传视频封面文件。
 func (u *UploadController) Cover(ctx *gin.Context) {
 	savePath := variable.ConfigYml.GetString("FileUploadSetting.UploadRootPath") + variable.ConfigYml.GetString("FileUploadSetting.CoverUploadFileSavePath")
 	if r, finnalSavePath := upload_file.UploadCover(ctx, savePath); r == true {
@@ -31,18 +34,7 @@ func (u *UploadController) Cover(ctx *gin.Context) {
 
 }
 
-func (u *UploadController) Video(ctx *gin.Context) {
-	savePath := variable.ConfigYml.GetString("FileUploadSetting.UploadRootPath") + variable.ConfigYml.GetString("FileUploadSetting.VideoUploadFileSavePath")
-	if r, finnalSavePath, message := upload_file.UploadVideo(ctx, savePath); r == true {
-		response.Success(ctx, consts.CurdStatusOkMsg, finnalSavePath)
-	} else {
-		if message == "" {
-			message = consts.FilesUploadFailMsg
-		}
-		response.Fail(ctx, consts.FilesUploadFailCode, message, "")
-	}
-}
-
+// VideoInit 初始化视频分片上传任务。
 func (u *UploadController) VideoInit(ctx *gin.Context) {
 	if r, finalSavePath, message := upload_file.InitVideoChunkUpload(ctx); r == true {
 		response.Success(ctx, consts.CurdStatusOkMsg, finalSavePath)
@@ -54,6 +46,7 @@ func (u *UploadController) VideoInit(ctx *gin.Context) {
 	}
 }
 
+// VideoChunk 保存单个视频分片。
 func (u *UploadController) VideoChunk(ctx *gin.Context) {
 	if r, finalSavePath, message := upload_file.SaveVideoChunk(ctx); r == true {
 		response.Success(ctx, consts.CurdStatusOkMsg, finalSavePath)
@@ -65,6 +58,7 @@ func (u *UploadController) VideoChunk(ctx *gin.Context) {
 	}
 }
 
+// VideoComplete 合并分片并完成视频上传。
 func (u *UploadController) VideoComplete(ctx *gin.Context) {
 	savePath := variable.ConfigYml.GetString("FileUploadSetting.UploadRootPath") + variable.ConfigYml.GetString("FileUploadSetting.VideoUploadFileSavePath")
 	if r, finalSavePath, message := upload_file.CompleteVideoChunkUpload(ctx, savePath); r == true {

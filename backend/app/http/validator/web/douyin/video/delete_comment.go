@@ -10,10 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// DeleteComment 定义删除评论请求参数。
 type DeleteComment struct {
 	CommentID
 }
 
+// CheckParams 校验删除评论参数并分发到控制器。
 func (v DeleteComment) CheckParams(context *gin.Context) {
 	commentID := context.PostForm("comment_id")
 	if commentID == "" {

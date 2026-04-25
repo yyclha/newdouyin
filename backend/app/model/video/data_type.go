@@ -4,6 +4,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// Comment 定义返回给控制器层的评论数据结构。
 type Comment struct {
 	*gorm.DB        `gorm:"-" json:"-"`
 	CommentID       int64  `json:"comment_id,string"`    // bigint

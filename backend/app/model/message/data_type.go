@@ -2,6 +2,7 @@ package message
 
 import "gorm.io/gorm"
 
+// Message 定义一条私信消息的数据结构。
 type Message struct {
 	*gorm.DB   `gorm:"-" json:"-"`
 	ID         string `json:"id" db:"bigint"`       // bigint

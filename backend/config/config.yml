@@ -1,68 +1,68 @@
-﻿AppDebug: true   # 璁剧疆绋嬪簭鎵€澶勭殑妯″紡锛宒ebug=true 璋冭瘯妯″紡锛屾棩蹇椾紭鍏堟樉绀哄湪鎺у埗鍙帮紝 debug=false 闈炶皟璇曟ā寮忥紝鏃ュ織灏嗗啓鍏ユ棩蹇楁枃浠?
+AppDebug: true   # 设置程序所处的模式，debug=true 调试模式，日志优先显示在控制台， debug=false 非调试模式，日志将写入日志文件
 
 HttpServer:
   Web:
-    Port: ":22001"                  #鍚庣搴旂敤绫荤鍙?娉ㄦ剰鍓嶉潰鏈夊啋鍙?
-  AllowCrossDomain: true    #鏄惁鍏佽璺ㄥ煙锛岄粯璁?鍏佽锛屾洿澶氬叧浜庤法鍩熺殑浠嬬粛浠庡弬鑰冿細https://www.yuque.com/xiaofensinixidaouxiang/bkfhct/kxddzd
-  TrustProxies:                     #璁剧疆gin鍙互淇′换鐨勪唬鐞嗘湇鍔″櫒(渚嬪 nginx 鍓嶇疆浠ｇ悊鏈嶅姟鍣?,璇︽儏鍙傝鏂囨。锛歨ttps://www.yuque.com/xiaofensinixidaouxiang/bkfhct/vmobe7
-    IsOpen: 0                        # 鍙€夊€硷紙0 鎴栬€?1锛?濡傛灉 go 鏈嶅姟鏄 nginx 浠ｇ悊锛屽缓璁鍊艰缃负 1锛屽皢 nginx 浠ｇ悊鍙婃満鍣ㄧ殑ip娣诲姞鍒?ProxyServerList 鍒楄〃
+    Port: ":22001"                  #后端应用类端口,注意前面有冒号
+  AllowCrossDomain: true    #是否允许跨域，默认 允许，更多关于跨域的介绍从参考：https://www.yuque.com/xiaofensinixidaouxiang/bkfhct/kxddzd
+  TrustProxies:                     #设置gin可以信任的代理服务器(例如 nginx 前置代理服务器),详情参见文档：https://www.yuque.com/xiaofensinixidaouxiang/bkfhct/vmobe7
+    IsOpen: 0                        # 可选值（0 或者 1）,如果 go 服务是被 nginx 代理，建议该值设置为 1，将 nginx 代理及机器的ip添加到 ProxyServerList 列表
     ProxyServerList:
-      - "192.168.10.1"             # nginx 浠ｇ悊鏈嶅姟鍣╥p鍦板潃
+      - "192.168.10.1"             # nginx 代理服务器ip地址
       - "192.168.10.2"
 Token:
-  JwtTokenSignKey:  "douyin-backend"   #璁剧疆token鐢熸垚鏃跺姞瀵嗙殑绛惧悕
-  JwtDefaultUid: 1 # 榛樿鐢ㄦ埛 id
-  JwtTokenOnlineUsers:  3         #涓€涓处鍙峰瘑鐮佸厑璁告渶澶ц幏鍙栧嚑涓湁鏁堢殑token锛屽綋瓒呰繃杩欎釜鍊硷紝绗竴娆¤幏鍙栫殑token鐨勮处鍙枫€佸瘑鐮佸氨浼氬け鏁?
-  JwtTokenCreatedExpireAt: 28800   #鍒涘缓鏃秚oken榛樿鏈夋晥绉掓暟锛坱oken鐢熸垚鏃堕棿鍔犱笂璇ユ椂闂寸鏁帮紝绠楀仛鏈夋晥鏈燂級,3600*8=28800 绛変簬8灏忔椂
-  JwtTokenRefreshAllowSec: 86400   #瀵逛簬杩囨湡鐨則oken锛屽厑璁稿湪澶氬皯灏忔椂涔嬪唴鍒锋柊锛岃秴杩囨鏃堕棿鍒欎笉鍏佽鍒锋柊鎹㈠彇鏂皌oken锛?6400=3600*24锛屽嵆token杩囨湡24灏忔椂涔嬪唴鍏佽鎹㈡柊token
-  JwtTokenRefreshExpireAt: 36000   #瀵逛簬杩囨湡鐨則oken锛屾敮鎸佷粠鐩稿叧鎺ュ彛鍒锋柊鑾峰彇鏂扮殑token锛屽畠鏈夋晥鏈熶负10涓皬鏃讹紝3600*10=36000 绛変簬10灏忔椂
-  BindContextKeyName: "userToken"  #鐢ㄦ埛鍦?header 澶撮儴鎻愪氦鐨則oken缁戝畾鍒颁笂涓嬫枃鏃剁殑閿悕锛屾柟渚跨洿鎺ヤ粠涓婁笅鏂?gin.context)鐩存帴鑾峰彇姣忎釜鐢ㄦ埛鐨刬d绛変俊鎭?
-  IsCacheToRedis: 1                #鐢ㄦ埛token鏄惁缂撳瓨鍒皉edis, 濡傛灉宸茬粡姝ｇ‘閰嶇疆浜唕edis,寤鸿璁剧疆涓?, 寮€鍚痳edis缂撳瓨token锛岋紙1=鐢ㄦ埛token缂撳瓨鍒皉edis; 0=token鍙瓨鍦ㄤ簬mysql锛?
+  JwtTokenSignKey:  "douyin-backend"   #设置token生成时加密的签名
+  JwtDefaultUid: 1 # 默认用户 id
+  JwtTokenOnlineUsers:  3         #一个账号密码允许最大获取几个有效的token，当超过这个值，第一次获取的token的账号、密码就会失效
+  JwtTokenCreatedExpireAt: 28800   #创建时token默认有效秒数（token生成时间加上该时间秒数，算做有效期）,3600*8=28800 等于8小时
+  JwtTokenRefreshAllowSec: 86400   #对于过期的token，允许在多少小时之内刷新，超过此时间则不允许刷新换取新token，86400=3600*24，即token过期24小时之内允许换新token
+  JwtTokenRefreshExpireAt: 36000   #对于过期的token，支持从相关接口刷新获取新的token，它有效期为10个小时，3600*10=36000 等于10小时
+  BindContextKeyName: "userToken"  #用户在 header 头部提交的token绑定到上下文时的键名，方便直接从上下文(gin.context)直接获取每个用户的id等信息
+  IsCacheToRedis: 1                #用户token是否缓存到redis, 如果已经正确配置了redis,建议设置为1, 开启redis缓存token，（1=用户token缓存到redis; 0=token只存在于mysql）
 
-LoginPolicy:                       #璐﹀彿鐧婚檰绛栫暐锛屽缓璁紑鍙戣€呴厤缃畆edis锛屽紑鍚鍔熻兘
-  IsOpenPolicy: 0                  #璇ュ姛鑳戒緷璧栦簬redis锛屽綋寮€鍚鍔熻兘蹇呴』淇濊瘉redis閰嶇疆姝ｇ‘锛?=涓嶉檺鍒讹紱1=鍚敤鐧婚檰瀹夊叏绛栫暐
-  MaxLoginFailTimes: 3             #鐧婚檰杩炵画澶辫触鐨勬渶澶ф鏁?
-  LoginFailCountDown: 120          #杩炵画鐧婚檰澶辫触瓒呴檺鍚庨檺鍒?20绉?璇疯嚜琛屼慨鏀?鍐呯姝㈢櫥闄?
+LoginPolicy:                       #账号登陆策略，建议开发者配置redis，开启此功能
+  IsOpenPolicy: 0                  #该功能依赖于redis，当开启此功能必须保证redis配置正确，0=不限制；1=启用登陆安全策略
+  MaxLoginFailTimes: 3             #登陆连续失败的最大次数
+  LoginFailCountDown: 120          #连续登陆失败超限后限制120秒(请自行修改)内禁止登陆
 
 Redis:
   Host: "127.0.0.1"
   Port: 6379
-  Auth: ""  # 璁剧疆浣犵殑redis瀵嗙爜
+  Auth: ""  # 设置你的redis密码
   MaxIdle: 10
   MaxActive: 1000
   IdleTimeout: 60
-  IndexDb: 1               # 榛樿杩炴帴鐨剅edis鏄?鍙锋暟鎹簱锛屼笉鏄?鍙锋暟鎹簱
-  ConnFailRetryTimes: 3    #浠庤繛鎺ユ睜鑾峰彇杩炴帴澶辫触锛屾渶澶ч噸璇曟鏁?
-  ReConnectInterval: 1     # 浠庤繛鎺ユ睜鑾峰彇杩炴帴澶辫触锛屾瘡娆￠噸璇曚箣闂撮棿闅旂殑绉掓暟
+  IndexDb: 1               # 默认连接的redis是1号数据库，不是0号数据库
+  ConnFailRetryTimes: 3    #从连接池获取连接失败，最大重试次数
+  ReConnectInterval: 1     # 从连接池获取连接失败，每次重试之间间隔的秒数
 
 Logs:
-  GinLogName: "/storage/logs/gin.log"                      # 璁剧疆 gin 妗嗘灦鐨勬帴鍙ｈ闂棩蹇楋紝v1.5.xx 浠ュ悗鐨勭増鏈笉鍐嶇敓鎴恎in鍘熺敓鐨勬帴鍙ｈ闂棩蹇?
-  GoSkeletonLogName: "/storage/logs/douyin-backend.log"    # 璁剧疆douyin-backend椤圭洰楠ㄦ灦杩愯鏃舵棩蹇楁枃浠跺悕锛屾敞鎰忚鍚嶇О涓嶈涓庝笂涓€鏉￠噸澶?,閬垮厤鍜?gin 妗嗘灦鐨勬棩蹇楁幒鏉備竴璧凤紝閫犳垚娣蜂贡銆?
-  TextFormat: "json"                                       # 璁板綍鏃ュ織鐨勬牸寮忥紝鍙傛暟閫夐」锛歝onsole銆乯son 锛?console 琛ㄧず涓€鑸殑鏂囨湰鏍煎紡
-  TimePrecision: "millisecond"                             # 璁板綍鏃ュ織鏃讹紝鐩稿叧鐨勬椂闂寸簿搴︼紝璇ュ弬鏁伴€夐」锛歴econd  銆?millisecond 锛?鍒嗗埆琛ㄧず 绉?鍜?姣 ,榛樿涓烘绉掔骇鍒?
-  MaxSize: 10                                              # 姣忎釜鏃ュ織鐨勬渶澶у昂瀵?浠B涓哄崟浣嶏級锛?瓒呰繃璇ュ€硷紝绯荤粺灏嗕細鑷姩杩涜鍒囧壊
-  MaxBackups: 7                                            # 淇濈暀鏃ф棩蹇楁渶澶т釜鏁?
-  MaxAge: 15                                               # 淇濈暀鏃ф棩蹇楁渶澶уぉ鏁?
-  Compress: false                                          # 鏃ュ織澶囦唤鏃讹紝鏄惁杩涜鍘嬬缉
+  GinLogName: "/storage/logs/gin.log"                      # 设置 gin 框架的接口访问日志，v1.5.xx 以后的版本不再生成gin原生的接口访问日志
+  GoSkeletonLogName: "/storage/logs/douyin-backend.log"    # 设置douyin-backend项目骨架运行时日志文件名，注意该名称不要与上一条重复 ,避免和 gin 框架的日志掺杂一起，造成混乱。
+  TextFormat: "json"                                       # 记录日志的格式，参数选项：console、json ， console 表示一般的文本格式
+  TimePrecision: "millisecond"                             # 记录日志时，相关的时间精度，该参数选项：second  、 millisecond ， 分别表示 秒 和 毫秒 ,默认为毫秒级别
+  MaxSize: 10                                              # 每个日志的最大尺寸(以MB为单位）， 超过该值，系统将会自动进行切割
+  MaxBackups: 7                                            # 保留旧日志最大个数
+  MaxAge: 15                                               # 保留旧日志最大天数
+  Compress: false                                          # 日志备份时，是否进行压缩
 
-Websocket:                        # 璇ユ湇鍔′笌Http鍏锋湁鐩稿悓鐨刬p銆佺鍙ｏ紝鍥犳涓嶉渶瑕侀澶栬缃鍙?
-  Start: 1                        # 榛樿涓嶅惎鍔ㄨ鏈嶅姟锛?=鍚姩锛?=涓嶅惎鍔級
-  WriteReadBufferSize: 20480      # 璇诲啓缂撳啿鍖哄垎閰嶅瓧鑺傦紝澶ф鑳藉瓨鍌?6800 澶氫竴鐐圭殑鏂囧瓧
-  MaxMessageSize: 65535           # 浠庢秷鎭閬撹鍙栨秷鎭殑鏈€澶у瓧鑺?
-  PingPeriod: 30                  # 蹇冭烦鍖呴鐜囷紝鍗曚綅锛氱
-  HeartbeatFailMaxTimes: 4        # 鍏佽蹇冭烦澶辫触鐨勬渶澶ф鏁帮紙榛樿璁剧疆涓篜ingPeriod=30绉掓娴嬩竴娆★紝杩炵画4娆℃病鏈夊績璺冲氨浼氭竻闄ゅ悗绔湪绾夸俊鎭級
-  ReadDeadline: 0                 # 瀹㈡埛绔湪绾挎儏鍐典笅锛屾甯哥殑涓氬姟娑堟伅闂撮殧绉掓暟蹇呴』灏忎簬璇ュ€硷紝鍚﹀垯鏈嶅姟鍣ㄥ皢浼氫富鍔ㄦ柇寮€,鍗曚綅锛氱銆?0 琛ㄧず涓嶈闄愬埗锛屽嵆鏈嶅姟鍣ㄤ笉涓诲姩鏂紑涓嶅彂閫佷换浣曟秷鎭殑鍦ㄧ嚎瀹㈡埛绔?
-  WriteDeadline: 35               # 娑堟伅鍗曟鍐欏叆瓒呮椂鏃堕棿锛屽崟浣嶏細绉?
+Websocket:                        # 该服务与Http具有相同的ip、端口，因此不需要额外设置端口
+  Start: 1                        # 默认不启动该服务（1=启动；0=不启动）
+  WriteReadBufferSize: 20480      # 读写缓冲区分配字节，大概能存储 6800 多一点的文字
+  MaxMessageSize: 65535           # 从消息管道读取消息的最大字节
+  PingPeriod: 30                  # 心跳包频率，单位：秒
+  HeartbeatFailMaxTimes: 4        # 允许心跳失败的最大次数（默认设置为PingPeriod=30秒检测一次，连续4次没有心跳就会清除后端在线信息）
+  ReadDeadline: 0                 # 客户端在线情况下，正常的业务消息间隔秒数必须小于该值，否则服务器将会主动断开,单位：秒。 0 表示不设限制，即服务器不主动断开不发送任何消息的在线客户端
+  WriteDeadline: 35               # 消息单次写入超时时间，单位：秒
 
 SnowFlake:
-  SnowFlakeMachineId: 2               # 濡傛灉鏈」鐩悓鏃堕儴缃插湪澶氬彴鏈哄櫒锛屽苟涓旈渶瑕佸悓鏃朵娇鐢ㄨ绠楁硶锛岃涓烘瘡涓€鍙版満鍣ㄨ缃笉鍚岀殑ID锛屽尯闂磋寖鍥? [0,1023]
+  SnowFlakeMachineId: 2               # 如果本项目同时部署在多台机器，并且需要同时使用该算法，请为每一台机器设置不同的ID，区间范围: [0,1023]
 
 FileUploadSetting:
-  Size: 50                            # 璁剧疆涓婁紶鏂囦欢鐨勬渶澶у€硷紝鍗曚綅锛歁锛屾敞鎰忥細 濡傛灉go鍓嶇疆nginx鏈嶅姟鍣紝nginx 榛樿闄愬埗鏂囦欢涓婁紶澶у皬涓?50 M ,鐢ㄦ埛涓婁紶鏂囦欢闄愬埗杩橀渶瑕佺户缁慨鏀?nginx 閰嶇疆
-  UploadFileField: "file"             # post涓婁紶鏂囦欢鏃讹紝琛ㄥ崟鐨勯敭鍚?
-  StorageDriver: "cos"              # local=鏈湴瀛樺偍锛宑os=鑵捐浜慍OS
-  SourceUrlPrefix: "/public"  # 璧勬簮璁块棶URL鍓嶇紑
-  UploadRootPath: "./public"  # 鏈嶅姟鍣ㄥ瓨鍌ㄨ祫婧愮殑鏍圭洰褰?
+  Size: 50                            # 设置上传文件的最大值，单位：M，注意： 如果go前置nginx服务器，nginx 默认限制文件上传大小为 50 M ,用户上传文件限制还需要继续修改 nginx 配置
+  UploadFileField: "file"             # post上传文件时，表单的键名
+  StorageDriver: "cos"              # local=本地存储，cos=腾讯云COS
+  SourceUrlPrefix: "/public"  # 资源访问URL前缀
+  UploadRootPath: "./public"  # 服务器存储资源的根目录
   AvatarSmallUploadFileSavePath: "/images/avatar_small/"
   AvatarLargeUploadFileSavePath: "/images/avatar_large/"
   CoverUploadFileSavePath: "/images/cover/"
@@ -70,74 +70,80 @@ FileUploadSetting:
   VideoUploadFileSavePath: "/videos/source/"
   VideoCoverUploadFileSavePath: "/videos/cover/"
   Cos:
-    BucketURL: "https://example-bucket.cos.ap-region.myqcloud.com"                     # 渚嬪 https://<Bucket-APPID>.cos.ap-shanghai.myqcloud.com
-    BaseURL: ""                       # 瀵瑰璁块棶鍩熷悕锛屽彲濉獵OS榛樿鍩熷悕鎴栬嚜瀹氫箟CDN鍩熷悕
-    SecretID: "YOUR_COS_SECRET_ID"
-    SecretKey: "YOUR_COS_SECRET_KEY"
+    BucketURL: "https://douyin-1373944802.cos.ap-nanjing.myqcloud.com"                     # 例如 https://<Bucket-APPID>.cos.ap-shanghai.myqcloud.com
+    BaseURL: ""                       # 对外访问域名，可填COS默认域名或自定义CDN域名
+    SecretID: "${TENCENT_CLOUD_SECRET_ID}"
+    SecretKey: "${TENCENT_CLOUD_SECRET_KEY}"
     PathPrefix: "douyin"
 
-  AllowMimeType: #鍏佽鐨勬枃浠秏ime绫诲瀷鍒楄〃
-    - "image/jpeg"                    #jpg銆乯peg鍥剧墖鏍煎紡
-    - "image/png"                     #png鍥剧墖鏍煎紡
-    - "image/x-icon"                  #ico鍥剧墖
-    - "image/bmp"                     #bmp鍥剧墖
-    - "application/zip"               #xlsx銆乨ocx銆亃ip
+  AllowMimeType: #允许的文件mime类型列表
+    - "image/jpeg"                    #jpg、jpeg图片格式
+    - "image/png"                     #png图片格式
+    - "image/x-icon"                  #ico图片
+    - "image/bmp"                     #bmp图片
+    - "application/zip"               #xlsx、docx、zip
     - "application/x-gzip"            #tar.gz
-    - "text/plain; charset=utf-8"     #txt log json绛夋枃鏈枃浠?
-    - "video/mp4"      #瑙嗛鏂囦欢锛屼緥濡傦細mp4
-    - "audio/mpeg"     #闊抽鏂囦欢锛屼緥濡? mp3
+    - "text/plain; charset=utf-8"     #txt log json等文本文件
+    - "video/mp4"      #视频文件，例如：mp4
+    - "audio/mpeg"     #音频文件，例如: mp3
 RabbitMq:
   HelloWorld:
-    #娑堟伅鏈嶅姟鍣ㄥ湴鍧€銆佽处鍙枫€佸瘑鐮侊紝 / (鏂滄潬)琛ㄧず榛樿鐨勮櫄鎷熶富鏈猴紝濡傛灉鏄紑鍙戣€呰嚜宸卞垱寤虹殑锛岀洿鎺ヨ拷鍔犲湪 / (鏂滄潬)鍚庨潰鍗冲彲锛屼緥濡傦細amqp://璐﹀彿:瀵嗙爜@ip鍦板潃:5672/ginskeleton
-    Addr: "amqp://璐﹀彿:瀵嗙爜@ip鍦板潃:5672/"
+    #消息服务器地址、账号、密码， / (斜杠)表示默认的虚拟主机，如果是开发者自己创建的，直接追加在 / (斜杠)后面即可，例如：amqp://账号:密码@ip地址:5672/ginskeleton
+    Addr: "amqp://账号:密码@ip地址:5672/"
     QueueName: "helloword_queue"
-    Durable: false                                        #娑堟伅鏄惁鎸佷箙鍖?
-    ConsumerChanNumber: 2                                 #娑堣垂鑰呴€氶亾鏁伴噺锛堝厑璁镐竴涓秷璐硅€呬娇鐢ㄥ嚑涓繛鎺ラ€氶亾娑堣垂銆佸鐞嗘秷鎭級
-    OffLineReconnectIntervalSec: 5                        #娑堣垂鑰呮帀绾垮悗,閲嶈繛闂撮殧鐨勭鏁?
-    RetryCount: 5                                         #娑堣垂鑰呮帀绾垮悗,灏濊瘯閲嶈繛鏈€澶ф鏁?
+    Durable: false                                        #消息是否持久化
+    ConsumerChanNumber: 2                                 #消费者通道数量（允许一个消费者使用几个连接通道消费、处理消息）
+    OffLineReconnectIntervalSec: 5                        #消费者掉线后,重连间隔的秒数
+    RetryCount: 5                                         #消费者掉线后,尝试重连最大次数
   WorkQueue:
-    Addr: "amqp://璐﹀彿:瀵嗙爜@ip鍦板潃:5672/"  #鍙傜収鍓嶆枃鍦板潃璇存槑
+    Addr: "amqp://账号:密码@ip地址:5672/"  #参照前文地址说明
     QueueName: "work_queue"
-    Durable: false                                        #娑堟伅鏄惁鎸佷箙鍖?
-    ConsumerChanNumber: 2                                 #娑堣垂鑰呴€氶亾鏁伴噺锛堝厑璁镐竴涓秷璐硅€呬娇鐢ㄥ嚑涓繛鎺ラ€氶亾娑堣垂銆佸鐞嗘秷鎭級
-    OffLineReconnectIntervalSec: 5                        #娑堣垂鑰呮帀绾垮悗,閲嶈繛闂撮殧鐨勭鏁?
-    RetryCount: 5                                         #娑堣垂鑰呮帀绾垮悗,灏濊瘯閲嶈繛鏈€澶ф鏁?
+    Durable: false                                        #消息是否持久化
+    ConsumerChanNumber: 2                                 #消费者通道数量（允许一个消费者使用几个连接通道消费、处理消息）
+    OffLineReconnectIntervalSec: 5                        #消费者掉线后,重连间隔的秒数
+    RetryCount: 5                                         #消费者掉线后,尝试重连最大次数
+  VideoDigg:
+    Addr: "amqp://guest:guest@127.0.0.1:5672/"
+    QueueName: "video_digg_queue"
+    Durable: true
+    PrefetchCount: 1
+    ReconnectIntervalSec: 3
   PublishSubscribe:
-    Addr: "amqp://璐﹀彿:瀵嗙爜@ip鍦板潃:5672/"   #娑堟伅鏈嶅姟鍣ㄥ湴鍧€銆佽处鍙枫€佸瘑鐮?
+    Addr: "amqp://账号:密码@ip地址:5672/"   #消息服务器地址、账号、密码
     ExchangeType: "fanout"
-    ExchangeName: "fanout_exchange"                       #鍗虫椂娑堟伅闃熷垪鍚嶇О锛?
-    DelayedExchangeName: "delayed_fanout_exchange"        #寤惰繜娑堟伅闃熷垪鍚嶇О锛屽繀椤讳簨鍏堝湪rabbitmq 鏈嶅姟鍣ㄧ鐞嗙鎵嬪姩鍒涘缓
-    Durable: false                                        #娑堟伅鏄惁鎸佷箙鍖栵紝濡傛灉鍒濆鍖栫殑鏄欢杩熸秷鎭槦鍒?閭ｄ箞璇ュ弬鏁颁細琚▼搴忓己鍒惰缃负 true
-    QueueName: ""                                         #闃熷垪鍚嶇О锛屼负绌?琛ㄧず鎵€鏈夎闃呯殑娑堣垂鑰咃紙consumer锛夐兘鍙互鎺ュ彈鍒板悓鏍风殑娑堟伅锛屽鏋滆缃悕绉帮紝浼氬鑷村彧鏈夋渶鍚庝竴涓惎鍔ㄧ殑娑堣垂鑰呰兘鎺ュ彈鍒版秷鎭€?
-    ConsumerChanNumber: 1                                 #娑堣垂鑰呴€氶亾鏁伴噺锛堝彂甯冦€佽闃呮ā寮忔秷璐硅€呬娇鐢ㄤ竴涓€氶亾锛岄伩鍏嶅涓€氶亾閲嶅鏀跺埌鏁版嵁锛?
-    OffLineReconnectIntervalSec: 10                       #娑堣垂鑰呮帀绾垮悗,閲嶈繛闂撮殧鐨勭鏁?
-    RetryCount: 5                                         #娑堣垂鑰呮帀绾垮悗,灏濊瘯閲嶈繛鏈€澶ф鏁?
+    ExchangeName: "fanout_exchange"                       #即时消息队列名称，
+    DelayedExchangeName: "delayed_fanout_exchange"        #延迟消息队列名称，必须事先在rabbitmq 服务器管理端手动创建
+    Durable: false                                        #消息是否持久化，如果初始化的是延迟消息队列,那么该参数会被程序强制设置为 true
+    QueueName: ""                                         #队列名称，为空 表示所有订阅的消费者（consumer）都可以接受到同样的消息，如果设置名称，会导致只有最后一个启动的消费者能接受到消息。
+    ConsumerChanNumber: 1                                 #消费者通道数量（发布、订阅模式消费者使用一个通道，避免多个通道重复收到数据）
+    OffLineReconnectIntervalSec: 10                       #消费者掉线后,重连间隔的秒数
+    RetryCount: 5                                         #消费者掉线后,尝试重连最大次数
   Routing:
-    Addr: "amqp://璐﹀彿:瀵嗙爜@ip鍦板潃:5672/"   #鍙傜収鍓嶆枃鍦板潃璇存槑
+    Addr: "amqp://账号:密码@ip地址:5672/"   #参照前文地址说明
     ExchangeType: "direct"
     ExchangeName: "direct_exchange"
-    DelayedExchangeName: "delayed_direct_exchange"        #寤惰繜娑堟伅闃熷垪鍚嶇О锛屽繀椤讳簨鍏堝湪rabbitmq 鏈嶅姟鍣ㄧ鐞嗙鎵嬪姩鍒涘缓
-    Durable: false                                        #娑堟伅鏄惁鎸佷箙鍖栵紝濡傛灉鍒濆鍖栫殑鏄欢杩熸秷鎭槦鍒?閭ｄ箞璇ュ弬鏁颁細琚▼搴忓己鍒惰缃负 true
+    DelayedExchangeName: "delayed_direct_exchange"        #延迟消息队列名称，必须事先在rabbitmq 服务器管理端手动创建
+    Durable: false                                        #消息是否持久化，如果初始化的是延迟消息队列,那么该参数会被程序强制设置为 true
     QueueName: ""
-    OffLineReconnectIntervalSec: 10                       #娑堣垂鑰呮帀绾垮悗,閲嶈繛闂撮殧鐨勭鏁?
-    RetryCount: 5                                         #娑堣垂鑰呮帀绾垮悗,灏濊瘯閲嶈繛鏈€澶ф鏁?
+    OffLineReconnectIntervalSec: 10                       #消费者掉线后,重连间隔的秒数
+    RetryCount: 5                                         #消费者掉线后,尝试重连最大次数
   Topics:
-    Addr: "amqp://璐﹀彿:瀵嗙爜@ip鍦板潃:5672/"   #鍙傜収鍓嶆枃鍦板潃璇存槑
+    Addr: "amqp://账号:密码@ip地址:5672/"   #参照前文地址说明
     ExchangeType: "topic"
     ExchangeName: "topic_exchange"
-    DelayedExchangeName: "delayed_topic_exchange"         #寤惰繜娑堟伅闃熷垪鍚嶇О锛屽繀椤讳簨鍏堝湪rabbitmq 鏈嶅姟鍣ㄧ鐞嗙鎵嬪姩鍒涘缓
-    Durable: false                                        #娑堟伅鏄惁鎸佷箙鍖栵紝濡傛灉鍒濆鍖栫殑鏄欢杩熸秷鎭槦鍒?閭ｄ箞璇ュ弬鏁颁細琚▼搴忓己鍒惰缃负 true
+    DelayedExchangeName: "delayed_topic_exchange"         #延迟消息队列名称，必须事先在rabbitmq 服务器管理端手动创建
+    Durable: false                                        #消息是否持久化，如果初始化的是延迟消息队列,那么该参数会被程序强制设置为 true
     QueueName: ""
-    OffLineReconnectIntervalSec: 10                       #娑堣垂鑰呮帀绾垮悗,閲嶈繛闂撮殧鐨勭鏁?
-    RetryCount: 5                                         #娑堣垂鑰呮帀绾垮悗,灏濊瘯閲嶈繛鏈€澶ф鏁?
+    OffLineReconnectIntervalSec: 10                       #消费者掉线后,重连间隔的秒数
+    RetryCount: 5                                         #消费者掉线后,尝试重连最大次数
 
-# 鎺ュ彛鏉冮檺鎺у埗
+# 接口权限控制
 Casbin:
-  IsInit: 1 # 鏄惁闅忛」鐩惎鍔ㄥ悓姝ュ垵濮嬪寲锛?=鏄紱0=鍚?
-  AutoLoadPolicySeconds: 5 # 鎵弿鏁版嵁搴撶瓥鐣ョ殑棰戠巼(鍗曚綅锛氱)
+  IsInit: 1 # 是否随项目启动同步初始化：1=是；0=否,
+  AutoLoadPolicySeconds: 5 # 扫描数据库策略的频率(单位：秒)
   TablePrefix: "tb"
-  TableName: "auth_casbin_rule"  # 绋嬪簭鏈€缁堝垱寤虹殑琛ㄤ负锛?tb_casbin_rule (鍗冲湪鍓嶇紑鍜屽悕绉颁箣闂磋嚜鍔ㄦ坊鍔犱簡涓嬪垝绾?_ )
-  ModelConfig: |    # 绔栫嚎 | 琛ㄧず浠ヤ笅鏁存鏂囨湰淇濇寔鎹㈣鏍煎紡
+  TableName: "auth_casbin_rule"  # 程序最终创建的表为： tb_casbin_rule (即在前缀和名称之间自动添加了下划线 _ )
+  ModelConfig: |    # 竖线 | 表示以下整段文本保持换行格式
     [request_definition]
     r = sub, obj, act
     [policy_definition]
@@ -149,10 +155,8 @@ Casbin:
     [matchers]
     m = (g(r.sub, p.sub) || p.sub == "*" ) && keyMatch(r.obj , p.obj) && (r.act == p.act || p.act == "*")
 
-#楠岃瘉鐮?鍖呮嫭涓棿浠?閰嶇疆淇℃伅
+#验证码(包括中间件)配置信息
 Captcha:
-  captchaId: "captcha_id"  # 楠岃瘉鐮乮d鎻愪氦鏃剁殑閿悕
-  captchaValue: "captcha_value"   #楠岃瘉鐮佸€兼彁浜ゆ椂鐨勯敭鍚?
-  length: 4   # 楠岃瘉鐮佺敓鎴愭椂鐨勯暱搴?
-
-
+  captchaId: "captcha_id"  # 验证码id提交时的键名
+  captchaValue: "captcha_value"   #验证码值提交时的键名
+  length: 4   # 验证码生成时的长度

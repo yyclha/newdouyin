@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// UserModel 封装用户相关的数据库读写操作。
 type UserModel struct {
 	*gorm.DB                `gorm:"-" json:"-"`
 	UID                     int64           `json:"uid"`                       // bigint
@@ -51,10 +52,12 @@ type UserModel struct {
 	Avatar300x300           json.RawMessage `json:"avatar_300x300"`            // json
 }
 
+// CreateUserFactory 创建带数据库连接的用户模型实例。
 func CreateUserFactory(sqlType string) *UserModel {
 	return &UserModel{DB: model.UseDbConn(sqlType)}
 }
 
+// Register 创建账号记录，并初始化对应的用户资料骨架数据。
 func (u *UserModel) Register(phone, password, userIp string) bool {
 	var createTime = time.Now().Unix()
 	sql1 := `INSERT INTO tb_accounts(phone, password, last_login_ip, create_time) SELECT ?, ?, ?, ? FROM DUAL WHERE NOT EXISTS(SELECT 1 FROM tb_accounts WHERE phone=?)`
@@ -89,6 +92,7 @@ func (u *UserModel) Register(phone, password, userIp string) bool {
 	}
 }
 
+// Login 校验账号密码，并返回匹配到的账号信息。
 func (u *UserModel) Login(phone, password string) (account Account, ok bool) {
 	sql := `
 		SELECT ta.uid, ta.nickname, ta.phone, ta.password
@@ -109,6 +113,7 @@ func (u *UserModel) Login(phone, password string) (account Account, ok bool) {
 	return
 }
 
+// Attention 执行关注或取消关注用户的操作。
 func (u *UserModel) Attention(uid, followingId int64, action bool) bool {
 	currentTime := time.Now().Unix()
 	attentionSql := `INSERT INTO tb_relations (follower_id, following_id, create_time) VALUES (?, ?, ?);`
@@ -129,6 +134,7 @@ func (u *UserModel) Attention(uid, followingId int64, action bool) bool {
 	}
 }
 
+// UpdateInfo 根据操作类型更新一个可编辑的用户资料字段。
 func (u *UserModel) UpdateInfo(uid int64, operationType int, data string) bool {
 	// 目前支持三种修改类型(nickname/unique_id/signature)
 	var sql string
@@ -154,6 +160,7 @@ func (u *UserModel) UpdateInfo(uid int64, operationType int, data string) bool {
 	}
 }
 
+// AwemeStatus 查询当前用户的关注、点赞和收藏状态数据。
 func (u *UserModel) AwemeStatus(uid int64) (awemeStatus AwemeStatusModel, success bool) {
 	attentionSql := `SELECT following_id FROM tb_relations WHERE follower_id=?`
 	diggSql := `SELECT aweme_id FROM tb_diggs WHERE uid=?`
@@ -164,6 +171,7 @@ func (u *UserModel) AwemeStatus(uid int64) (awemeStatus AwemeStatusModel, succes
 	return awemeStatus, true
 }
 
+// GetPanel 查询目标用户的个人主页面板数据。
 func (u *UserModel) GetPanel(uid int64) (userinfo model.User, ok bool) {
 	sql := `
 		SELECT *
@@ -180,6 +188,7 @@ func (u *UserModel) GetPanel(uid int64) (userinfo model.User, ok bool) {
 	return
 }
 
+// GetFriends 查询当前用户的互相关注好友列表。
 func (u *UserModel) GetFriends(uid int64) (userinfo []model.User, ok bool) {
 	sql := `
 		SELECT *
@@ -203,6 +212,7 @@ func (u *UserModel) GetFriends(uid int64) (userinfo []model.User, ok bool) {
 	return
 }
 
+// GetFollow 查询当前用户的关注列表。
 func (u *UserModel) GetFollow(uid int64) (userinfo []model.User, ok bool) {
 	sql := `
 		SELECT *
@@ -221,6 +231,7 @@ func (u *UserModel) GetFollow(uid int64) (userinfo []model.User, ok bool) {
 	return
 }
 
+// GetFans 查询当前用户的粉丝列表。
 func (u *UserModel) GetFans(uid int64) (userinfo []model.User, ok bool) {
 	sql := `
 		SELECT *
@@ -239,6 +250,7 @@ func (u *UserModel) GetFans(uid int64) (userinfo []model.User, ok bool) {
 	return
 }
 
+// OauthCheckTokenIsOk 检查指定 Token 是否仍属于当前用户的有效 Token 集合。
 func (u *UserModel) OauthCheckTokenIsOk(uid int64, token string) bool {
 	sql := `SELECT token 
 			FROM tb_auth_access_tokens 
@@ -264,6 +276,7 @@ func (u *UserModel) OauthCheckTokenIsOk(uid int64, token string) bool {
 	return false
 }
 
+// OauthLoginToken 记录当前用户新签发的登录 Token。
 func (u *UserModel) OauthLoginToken(uid int64, token string, expiresAt int64, clientIp string) bool {
 	sql := `INSERT INTO tb_auth_access_tokens(uid, action_name, token, created_at, expires_at, client_ip)
 			SELECT ?, 'login', ?, ?, ?, ? FROM DUAL WHERE NOT EXISTS(SELECT 1 FROM tb_auth_access_tokens a WHERE a.uid=? AND a.action_name='login' AND a.token=?)

@@ -8,11 +8,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CommentDigg 定义评论点赞请求参数。
 type CommentDigg struct {
 	CommentID
 	Action
 }
 
+// CheckParams 校验评论点赞参数并分发到控制器。
 func (v CommentDigg) CheckParams(context *gin.Context) {
 	if err := context.ShouldBind(&v); err != nil {
 		response.ValidatorError(context, err)

@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// GoodsModel 封装商品相关的查询操作。
 type GoodsModel struct {
 	*gorm.DB   `gorm:"-" json:"-"`
 	ID         int64   `json:"id"`         // bigint
@@ -19,10 +20,12 @@ type GoodsModel struct {
 	RealPrice  float64 `json:"real_price"` // float
 }
 
+// CreateShopFactory 创建带数据库连接的商品模型实例。
 func CreateShopFactory(sqlType string) *GoodsModel {
 	return &GoodsModel{DB: model.UseDbConn(sqlType)}
 }
 
+// GetShopRecommended 分页查询推荐商品列表。
 func (u *GoodsModel) GetShopRecommended(uid, pageNo, pageSize int64) (slice []Goods, total int64, ok bool) {
 	sql1 := `
 		SELECT *

@@ -16,12 +16,6 @@ func WebRegisterValidator() {
 	containers := container.CreateContainersFactory()
 
 	var key string
-	// jwt
-	{
-		key = consts.ValidatorPrefix + "JsonInBlacklist"
-		containers.Set(key, user.JsonInBlacklist{})
-	}
-
 	// base
 	{
 		key = consts.ValidatorPrefix + "Login"
@@ -38,9 +32,6 @@ func WebRegisterValidator() {
 		key = consts.ValidatorPrefix + "Cover"
 		containers.Set(key, upload.Cover{})
 
-		key = consts.ValidatorPrefix + "Video"
-		containers.Set(key, upload.Video{})
-
 		key = consts.ValidatorPrefix + "VideoInit"
 		containers.Set(key, upload.VideoInit{})
 
@@ -53,9 +44,6 @@ func WebRegisterValidator() {
 
 	// user
 	{
-		key = consts.ValidatorPrefix + "GetUserInfo"
-		containers.Set(key, user.GetUserInfo{})
-
 		key = consts.ValidatorPrefix + "UpdateInfo"
 		containers.Set(key, user.UpdateInfo{})
 
@@ -149,9 +137,6 @@ func WebRegisterValidator() {
 
 		key = consts.ValidatorPrefix + "AllMsg"
 		containers.Set(key, message.AllMsg{})
-
-		key = consts.ValidatorPrefix + "SendMsg"
-		containers.Set(key, message.SendMsg{})
 	}
 
 }

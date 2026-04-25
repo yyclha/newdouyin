@@ -1,15 +1,11 @@
-# douyin
+﻿# newdouyin
 
-This repository contains the combined frontend, backend, and nginx configuration for the Douyin/TikTok clone project.
+Project bundle containing:
 
-## Structure
+- `frontend/`: Vue/Vite front-end from `D:\douyin-front\X-Tok`
+- `backend/`: Go back-end from `D:\douyin-go\X-Tok-backend`
+- `nginx/`: nginx 1.24.0 configuration/static files from `D:\nginx\nginx-1.24.0`
 
-- `front/`: Vue 3 + Vite frontend
-- `backend/`: Go + Gin backend
-- `nginx/`: nginx reverse proxy configuration
+Large generated dependencies, caches, local IDE files, build outputs, executables, logs, and runtime temp data are intentionally excluded.
 
-## Notes
-
-- Sensitive local credentials have been replaced with placeholder values before publishing.
-- Large local runtime artifacts and caches are excluded from version control.
-- If you want to run the project locally, update the backend config files under `backend/config/` with your own database, Redis, and object storage settings.
+Note: `backend/database/db_douyin.sql` is about 140 MB locally, which exceeds GitHub's 100 MB single-file limit, so it is not included in this commit.

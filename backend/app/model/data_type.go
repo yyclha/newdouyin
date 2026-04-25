@@ -5,6 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// User 定义模型层通用的用户数据载体。
 type User struct {
 	*gorm.DB                `gorm:"-" json:"-"`
 	Uid                     string          `json:"uid"`                       // bigint
@@ -45,6 +46,7 @@ type User struct {
 	AvatarLarge             json.RawMessage `json:"avatar_large"`              // json
 }
 
+// Video 定义视频流、个人页等查询返回的视频数据载体。
 type Video struct {
 	*gorm.DB        `gorm:"-" json:"-"`
 	AwemeID         string          `json:"aweme_id"`         // bigint
@@ -74,6 +76,7 @@ type Video struct {
 	IsCollect       bool            `json:"is_collect"`       // boolean
 }
 
+// Music 定义视频中内嵌的音乐信息结构。
 type Music struct {
 	*gorm.DB      `gorm:"-" json:"-"`
 	Id            int64           `json:"id"`             // bigint
@@ -89,6 +92,7 @@ type Music struct {
 	OwnerID       int64           `json:"owner_id"`       // bigint
 }
 
+// Source 定义视频资源地址和封面等源数据结构。
 type Source struct {
 	*gorm.DB       `gorm:"-" json:"-"`
 	Id             int64           `json:"id"`               // bigint
@@ -103,6 +107,7 @@ type Source struct {
 	HorizontalType int             `json:"horizontal_type"`  // int
 }
 
+// Statistics 定义视频相关的互动统计数据结构。
 type Statistics struct {
 	*gorm.DB     `gorm:"-" json:"-"`
 	Id           int64 `json:"id"`            // bigint

@@ -5,6 +5,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// DeleteComment 删除当前用户自己的评论，并更新相关统计数据。
 func (c *CommentModel) DeleteComment(uid, commentID int64) bool {
 	tx := c.DB.Begin()
 	if tx.Error != nil {
@@ -59,11 +60,9 @@ func (c *CommentModel) DeleteComment(uid, commentID int64) bool {
 	}
 
 	cache := newInteractionCache()
-	cache.incrStat(comment.AwemeID, "comment_count", -1)
-	cache.removeComment(comment.AwemeID, commentID)
-	if recentComments, ok := c.loadRecentCommentsForCache(comment.AwemeID); ok {
-		cache.setComments(comment.AwemeID, recentComments)
-	}
+	cache.invalidateStats(comment.AwemeID)
+	cache.invalidateCommentList(comment.AwemeID)
+	cache.invalidateCommentItem(commentID)
 
 	return true
 }

@@ -2,12 +2,15 @@ package video
 
 import (
 	"douyin-backend/app/model"
+	"encoding/json"
 	"strconv"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
 )
 
+// CommentModel 封装评论相关的数据库读写操作。
 type CommentModel struct {
 	*gorm.DB        `gorm:"-" json:"-"`
 	CommentID       int64  `json:"comment_id"`        // bigint
@@ -32,10 +35,48 @@ type CommentModel struct {
 	LastModifyTS    int64  `json:"last_modify_ts"`    // bigint
 }
 
+// CreateCommentFactory 创建带数据库连接的评论模型实例。
 func CreateCommentFactory(sqlType string) *CommentModel {
 	return &CommentModel{DB: model.UseDbConn(sqlType)}
 }
 
+func commentSelectFields() string {
+	return `
+		SELECT
+			tc.comment_id,
+			tc.create_time,
+			tc.ip_location,
+			tc.aweme_id,
+			tc.content,
+			tc.is_author_digged,
+			tc.is_folded,
+			tc.is_hot,
+			tc.user_buried,
+			tc.user_digged,
+			tc.digg_count,
+			tc.user_id,
+			tc.sec_uid,
+			COALESCE(NULLIF(tu.short_id, 0), tc.short_user_id, 0) AS short_user_id,
+			COALESCE(NULLIF(tu.unique_id, ''), tc.user_unique_id, '') AS user_unique_id,
+			COALESCE(NULLIF(tu.signature, ''), tc.user_signature, '') AS user_signature,
+			COALESCE(NULLIF(tu.nickname, ''), tc.nickname, '') AS nickname,
+			CASE
+				WHEN tu.avatar_small IS NOT NULL AND tu.avatar_small <> '' THEN
+					CASE
+						WHEN JSON_VALID(tu.avatar_small) THEN COALESCE(JSON_UNQUOTE(JSON_EXTRACT(tu.avatar_small, '$.url_list[0]')), '')
+						ELSE tu.avatar_small
+					END
+				WHEN tc.avatar IS NOT NULL AND tc.avatar <> '' AND tc.avatar NOT LIKE '%/aweme/v1/play/%' THEN tc.avatar
+				ELSE ''
+			END AS avatar,
+			tc.sub_comment_count,
+			tc.last_modify_ts
+		FROM tb_comments AS tc
+		LEFT JOIN tb_users AS tu ON tc.user_id = tu.uid
+	`
+}
+
+// GetComments 分页查询目标视频的评论列表。
 func (c *CommentModel) GetComments(awemeID, currentUID, pageNo, pageSize int64) (comments []Comment, total int64, hasMore bool, ok bool) {
 	if pageNo < 0 {
 		pageNo = 0
@@ -63,41 +104,11 @@ func (c *CommentModel) GetComments(awemeID, currentUID, pageNo, pageSize int64) 
 			hasMore = offset+int64(len(cachedComments)) < total
 			return cachedComments, total, hasMore, true
 		}
-		if recentComments, loaded := c.loadRecentCommentsForCache(awemeID); loaded {
-			cache.setComments(awemeID, recentComments)
-			if cachedComments, hit := cache.getCommentsPage(awemeID, offset, pageSize, total); hit {
-				c.markCommentsUserDigged(cachedComments, currentUID)
-				hasMore = offset+int64(len(cachedComments)) < total
-				return cachedComments, total, hasMore, true
-			}
-		}
 	}
 
-	sql := `
-		SELECT
-			comment_id,
-			create_time,
-			ip_location,
-			aweme_id,
-			content,
-			is_author_digged,
-			is_folded,
-			is_hot,
-			user_buried,
-			user_digged,
-			digg_count,
-			user_id,
-			sec_uid,
-			short_user_id,
-			user_unique_id,
-			user_signature,
-			nickname,
-			avatar,
-			sub_comment_count,
-			last_modify_ts
-		FROM tb_comments
-		WHERE aweme_id = ?
-		ORDER BY create_time DESC
+	sql := commentSelectFields() + `
+		WHERE tc.aweme_id = ?
+		ORDER BY tc.create_time DESC
 		LIMIT ? OFFSET ?;
 	`
 	comments = []Comment{}
@@ -117,31 +128,9 @@ func (c *CommentModel) GetComments(awemeID, currentUID, pageNo, pageSize int64) 
 }
 
 func (c *CommentModel) loadRecentCommentsForCache(awemeID int64) (comments []Comment, ok bool) {
-	sql := `
-		SELECT
-			comment_id,
-			create_time,
-			ip_location,
-			aweme_id,
-			content,
-			is_author_digged,
-			is_folded,
-			is_hot,
-			user_buried,
-			user_digged,
-			digg_count,
-			user_id,
-			sec_uid,
-			short_user_id,
-			user_unique_id,
-			user_signature,
-			nickname,
-			avatar,
-			sub_comment_count,
-			last_modify_ts
-		FROM tb_comments
-		WHERE aweme_id = ?
-		ORDER BY create_time DESC
+	sql := commentSelectFields() + `
+		WHERE tc.aweme_id = ?
+		ORDER BY tc.create_time DESC
 		LIMIT 500;
 	`
 	comments = []Comment{}
@@ -150,6 +139,56 @@ func (c *CommentModel) loadRecentCommentsForCache(awemeID int64) (comments []Com
 		return nil, false
 	}
 	return comments, true
+}
+
+type commentAuthorProfile struct {
+	ShortID   int64  `json:"short_id"`
+	UniqueID  string `json:"unique_id"`
+	Signature string `json:"signature"`
+	Nickname  string `json:"nickname"`
+	Avatar    string `json:"avatar_small"`
+}
+
+type avatarPayload struct {
+	URLList []string `json:"url_list"`
+}
+
+func (c *CommentModel) loadCommentAuthorProfile(uid int64) (profile commentAuthorProfile, ok bool) {
+	sql := `
+		SELECT
+			COALESCE(short_id, 0) AS short_id,
+			COALESCE(unique_id, '') AS unique_id,
+			COALESCE(signature, '') AS signature,
+			COALESCE(nickname, '') AS nickname,
+			COALESCE(avatar_small, '') AS avatar_small
+		FROM tb_users
+		WHERE uid = ?
+		LIMIT 1;
+	`
+	if err := c.Raw(sql, uid).Scan(&profile).Error; err != nil {
+		return commentAuthorProfile{}, false
+	}
+	profile.Avatar = parseAvatarURL(profile.Avatar)
+	return profile, true
+}
+
+func parseAvatarURL(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	if strings.HasPrefix(raw, "http://") || strings.HasPrefix(raw, "https://") {
+		return raw
+	}
+
+	payload := avatarPayload{}
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		return ""
+	}
+	if len(payload.URLList) == 0 {
+		return ""
+	}
+	return strings.TrimSpace(payload.URLList[0])
 }
 
 func (c *CommentModel) markCommentsUserDigged(comments []Comment, currentUID int64) {
@@ -191,6 +230,7 @@ func (c *CommentModel) markCommentsUserDigged(comments []Comment, currentUID int
 	}
 }
 
+// VideoComment 写入一条评论，并同步更新视频评论数。
 func (c *CommentModel) VideoComment(uid, awemeID int64, ipLocation, content, shortID, uniqueID, signature, nickname, avatar string) (commentID int64, ok bool) {
 	currentTime := time.Now().Unix()
 
@@ -199,6 +239,23 @@ func (c *CommentModel) VideoComment(uid, awemeID int64, ipLocation, content, sho
 		parsedID, err := strconv.ParseInt(shortID, 10, 64)
 		if err == nil {
 			shortIDInt = parsedID
+		}
+	}
+	if profile, loaded := c.loadCommentAuthorProfile(uid); loaded {
+		if profile.ShortID > 0 {
+			shortIDInt = profile.ShortID
+		}
+		if profile.UniqueID != "" {
+			uniqueID = profile.UniqueID
+		}
+		if profile.Signature != "" {
+			signature = profile.Signature
+		}
+		if profile.Nickname != "" {
+			nickname = profile.Nickname
+		}
+		if profile.Avatar != "" {
+			avatar = profile.Avatar
 		}
 	}
 
@@ -248,8 +305,8 @@ func (c *CommentModel) VideoComment(uid, awemeID int64, ipLocation, content, sho
 	}
 
 	cache := newInteractionCache()
-	cache.incrStat(awemeID, "comment_count", 1)
-	cache.prependComment(awemeID, buildCommentForCache(uid, awemeID, ipLocation, content, shortIDInt, uniqueID, signature, nickname, avatar, currentTime, commentID))
+	cache.invalidateStats(awemeID)
+	cache.invalidateCommentList(awemeID)
 
 	return commentID, true
 }

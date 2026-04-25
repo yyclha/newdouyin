@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// CollectModel 封装视频收藏和取消收藏的数据库操作。
 type CollectModel struct {
 	*gorm.DB   `gorm:"-" json:"-"`
 	DiggID     int64 `json:"digg_id"`     // bigint
@@ -14,10 +15,12 @@ type CollectModel struct {
 	CreateTime int   `json:"create_time"` // int
 }
 
+// CreateCollectFactory 创建带数据库连接的收藏模型实例。
 func CreateCollectFactory(sqlType string) *CollectModel {
 	return &CollectModel{DB: model.UseDbConn(sqlType)}
 }
 
+// VideoCollect 对目标视频执行收藏或取消收藏操作。
 func (c *CollectModel) VideoCollect(uid, awemeID int64, action bool) bool {
 	currentTime := time.Now().Unix()
 	collectSql := `INSERT INTO tb_collects (uid, aweme_id, create_time) VALUES (?, ?, ?);`

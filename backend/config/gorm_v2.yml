@@ -1,36 +1,36 @@
-﻿Gormv2: # 鍙拡瀵?gorm  鎿嶄綔鏁版嵁搴撴湁鏁?
-  UseDbType: "mysql"   # admin 绯荤粺鐩墠鍙敮鎸乵ysql鏁版嵁搴擄紝璇峰嬁淇敼涓哄叾浠栨暟鎹簱
+Gormv2: # 只针对 gorm  操作数据库有效
+  UseDbType: "mysql"   # admin 系统目前只支持mysql数据库，请勿修改为其他数据库
   Mysql:
-    IsInitGlobalGormMysql: 1    # 闅忛」鐩惎鍔ㄤ负gorm db鍒濆鍖栦竴涓叏灞€ variable.GormDbMysql锛堝畬鍏ㄧ瓑浜?gorm.Db锛?姝ｇ‘閰嶇疆鏁版嵁搴擄紝璇ュ€煎繀椤昏缃负: 1
-    SlowThreshold: 30            # 鎱?SQL 闃堝€?sql鎵ц鏃堕棿瓒呰繃姝ゆ椂闂村崟浣嶏紙绉掞級锛屽氨浼氳Е鍙戠郴缁熸棩蹇楄褰?
+    IsInitGlobalGormMysql: 1    # 随项目启动为gorm db初始化一个全局 variable.GormDbMysql（完全等于*gorm.Db）,正确配置数据库，该值必须设置为: 1
+    SlowThreshold: 30            # 慢 SQL 阈值(sql执行时间超过此时间单位（秒），就会触发系统日志记录)
     Write:
       Host: "127.0.0.1"
       DataBase: "db_douyin1"
       Port: 3306
-      Prefix: "tb_"   #  鐩墠娌℃湁鐢ㄥ埌璇ラ厤缃」
+      Prefix: "tb_"   #  目前没有用到该配置项
       User: "root"
-      Pass: "YOUR_DB_PASSWORD"  # 淇敼涓轰綘鑷繁鐨勬暟鎹簱瀵嗙爜
+      Pass: "1234"  # 修改为你自己的数据库密码
       Charset: "utf8mb4"
-      SetMaxIdleConns: 10   # 鏈€澶х┖闂茶繛鎺ユ暟
-      SetMaxOpenConns: 128  # 鏈€澶ф墦寮€杩炴帴鏁?
-      SetConnMaxLifetime: 60    # 杩炴帴涓嶆椿鍔ㄦ椂鐨勬渶澶х敓瀛樻椂闂?绉? 锛堟瘡涓繛鎺ョ殑鐢熷懡鍛ㄦ湡锛?
-      #ReConnectInterval: 1    # 淇濈暀椤?閲嶈繛鏁版嵁搴撻棿闅旂鏁?
-      #PingFailRetryTimes: 3   # 淇濈暀椤?鏈€澶ч噸杩炴鏁?
-    IsOpenReadDb: 0                     # 鏄惁寮€鍚鍐欏垎绂婚厤缃紙1=寮€鍚€?=鍏抽棴锛夛紝IsOpenReadDb=1,Read 閮ㄥ垎鍙傛暟鏈夋晥锛屽惁鍒橰ead閮ㄥ垎鍙傛暟鐩存帴蹇界暐
+      SetMaxIdleConns: 10   # 最大空闲连接数
+      SetMaxOpenConns: 128  # 最大打开连接数
+      SetConnMaxLifetime: 60    # 连接不活动时的最大生存时间(秒) （每个连接的生命周期）
+      #ReConnectInterval: 1    # 保留项,重连数据库间隔秒数
+      #PingFailRetryTimes: 3   # 保留项,最大重连次数
+    IsOpenReadDb: 0                     # 是否开启读写分离配置（1=开启、0=关闭），IsOpenReadDb=1,Read 部分参数有效，否则Read部分参数直接忽略
     Read:
       Host: "127.0.0.1"
       DataBase: "db_douyin"
-      Port: 3306                        #娉ㄦ剰锛岄潪3306锛岃鑷璋冩暣
+      Port: 3306                        #注意，非3306，请自行调整
       Prefix: "tb_"
       User: "root"
-      Pass: "YOUR_DB_PASSWORD"  # 淇敼涓轰綘鑷繁鐨勬暟鎹簱瀵嗙爜
+      Pass: "1234"  # 修改为你自己的数据库密码
       Charset: "utf8mb4"
       SetMaxIdleConns: 10
       SetMaxOpenConns: 128
       SetConnMaxLifetime: 60
 
   SqlServer:
-    IsInitGlobalGormSqlserver: 0 # 闅忛」鐩惎鍔ㄤ负gorm db鍒濆鍖栦竴涓叏灞€ variable.GormDbMysql锛堝畬鍏ㄧ瓑浜?gorm.Db锛?姝ｇ‘閰嶇疆鏁版嵁搴擄紝璇ュ€煎繀椤昏缃负: 1
+    IsInitGlobalGormSqlserver: 0 # 随项目启动为gorm db初始化一个全局 variable.GormDbMysql（完全等于*gorm.Db）,正确配置数据库，该值必须设置为: 1
     SlowThreshold: 30
     Write:
       Host: "127.0.0.1"
@@ -38,13 +38,13 @@
       Port: 1433
       Prefix: "tb_"
       User: "Sa"
-      Pass: "YOUR_DB_PASSWORD"
-      #ReConnectInterval: 1    # 淇濈暀椤?閲嶈繛鏁版嵁搴撻棿闅旂鏁?
-      #PingFailRetryTimes: 3   # 淇濈暀椤?鏈€澶ч噸杩炴鏁?
+      Pass: "secret2017"
+      #ReConnectInterval: 1    # 保留项,重连数据库间隔秒数
+      #PingFailRetryTimes: 3   # 保留项,最大重连次数
       SetMaxIdleConns: 10
       SetMaxOpenConns: 128
       SetConnMaxLifetime: 60
-    IsOpenReadDb: 0            # 鏄惁寮€鍚鍐欏垎绂婚厤缃紙1=寮€鍚€?=鍏抽棴锛夛紝IsOpenReadDb=1,Read  閮ㄥ垎鍙傛暟鏈夋晥锛屽惁鍒橰ead閮ㄥ垎鍙傛暟鐩存帴蹇界暐
+    IsOpenReadDb: 0            # 是否开启读写分离配置（1=开启、0=关闭），IsOpenReadDb=1,Read  部分参数有效，否则Read部分参数直接忽略
     Read:
       Host: "127.0.0.1"
       DataBase: "db_douyin"
@@ -57,7 +57,7 @@
       SetConnMaxLifetime: 60
 
   PostgreSql:
-    IsInitGlobalGormPostgreSql: 0  # 闅忛」鐩惎鍔ㄤ负gorm db鍒濆鍖栦竴涓叏灞€ variable.GormDbMysql锛堝畬鍏ㄧ瓑浜?gorm.Db锛?姝ｇ‘閰嶇疆鏁版嵁搴擄紝璇ュ€煎繀椤昏缃负: 1
+    IsInitGlobalGormPostgreSql: 0  # 随项目启动为gorm db初始化一个全局 variable.GormDbMysql（完全等于*gorm.Db）,正确配置数据库，该值必须设置为: 1
     SlowThreshold: 30
     Write:
       Host: "127.0.0.1"
@@ -69,9 +69,9 @@
       SetMaxIdleConns: 10
       SetMaxOpenConns: 128
       SetConnMaxLifetime: 60
-    #ReConnectInterval: 1    # 淇濈暀椤?閲嶈繛鏁版嵁搴撻棿闅旂鏁?
-    #PingFailRetryTimes: 3   # 淇濈暀椤?鏈€澶ч噸杩炴鏁?
-    IsOpenReadDb: 0            # 鏄惁寮€鍚鍐欏垎绂婚厤缃紙1=寮€鍚€?=鍏抽棴锛夛紝IsOpenReadDb=1,Read  閮ㄥ垎鍙傛暟鏈夋晥锛屽惁鍒橰ead閮ㄥ垎鍙傛暟鐩存帴蹇界暐
+    #ReConnectInterval: 1    # 保留项,重连数据库间隔秒数
+    #PingFailRetryTimes: 3   # 保留项,最大重连次数
+    IsOpenReadDb: 0            # 是否开启读写分离配置（1=开启、0=关闭），IsOpenReadDb=1,Read  部分参数有效，否则Read部分参数直接忽略
     Read:
       Host: "127.0.0.1"
       DataBase: "db_douyin"
@@ -82,4 +82,3 @@
       SetMaxIdleConns: 10
       SetMaxOpenConns: 128
       SetConnMaxLifetime: 60
-

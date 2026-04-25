@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// ShareModel 封装视频分享记录的数据库操作。
 type ShareModel struct {
 	*gorm.DB   `gorm:"-" json:"-"`
 	DiggID     int64 `json:"digg_id"`     // bigint
@@ -15,10 +16,12 @@ type ShareModel struct {
 	CreateTime int   `json:"create_time"` // int
 }
 
+// CreateShareFactory 创建带数据库连接的分享模型实例。
 func CreateShareFactory(sqlType string) *ShareModel {
 	return &ShareModel{DB: model.UseDbConn(sqlType)}
 }
 
+// VideoShare 为分享列表中的每个目标用户写入一条分享记录。
 func (s *ShareModel) VideoShare(uid, awemeID int64, message string, shareUidList string) bool {
 	currentTime := time.Now().Unix()
 	sql := `

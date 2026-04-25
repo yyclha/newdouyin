@@ -1,27 +1,40 @@
-.DS_Store
-Thumbs.db
-
-.idea/
-.vscode/
-
+﻿# Dependencies
 node_modules/
-dist/
-coverage/
+vendor/
 
+# Build outputs
+dist/
+dist-ssr/
+build/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+
+# Logs and runtime data
+logs/
+*.log
+temp/
+*.tmp
+
+# Local caches
 .gocache/
 .gocache_build/
-*.log
-*.exe
+.cache/
+coverage/
+*.tsbuildinfo
 
-backend/public/
-backend/storage/
-backend/web.exe
-backend/temp_Comment.vue
-backend/migrate_data.py
-backend/fronted/
+# IDE/editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Large local database dump excluded because GitHub rejects files >100 MB
 backend/database/db_douyin.sql
-
-front/node_modules/
-front/dist/
-front/package-lock.json
-front/pnpm-lock.yaml

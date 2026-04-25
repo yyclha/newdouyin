@@ -1,11 +1,9 @@
 package upload_file
 
 import (
-	"douyin-backend/app/global/consts"
 	"douyin-backend/app/global/my_errors"
 	"douyin-backend/app/global/variable"
 	"douyin-backend/app/model/video"
-	"douyin-backend/app/utils/auth"
 	"douyin-backend/app/utils/md5_encrypt"
 	"errors"
 	"fmt"
@@ -15,49 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 )
-
-func UploadVideo(context *gin.Context, savePath string) (r bool, finalSavePath interface{}, message string) {
-	uploadField := variable.ConfigYml.GetString("FileUploadSetting.UploadFileField")
-	file, err := context.FormFile(uploadField)
-	if err != nil {
-		variable.ZapLog.Error("failed to get upload file: " + err.Error())
-		return false, nil, "failed to get upload file"
-	}
-
-	if err = os.MkdirAll(savePath, os.ModePerm); err != nil {
-		variable.ZapLog.Error("failed to create video directory: " + err.Error())
-		return false, nil, "failed to create video directory"
-	}
-
-	sequence := variable.SnowFlake.GetId()
-	if sequence <= 0 {
-		variable.ZapLog.Error("snowflake failed to generate video id")
-		return false, nil, "failed to generate video id"
-	}
-
-	saveFileName := fmt.Sprintf("%d%s", sequence, file.Filename)
-	saveFileName = md5_encrypt.MD5(saveFileName) + path.Ext(saveFileName)
-	videoFilePath := filepath.Join(savePath, saveFileName)
-
-	if saveErr := context.SaveUploadedFile(file, videoFilePath); saveErr != nil {
-		variable.ZapLog.Error("failed to save uploaded video: " + saveErr.Error())
-		return false, nil, "failed to save uploaded video"
-	}
-
-	return enqueuePreparedVideoUpload(preparedVideoUploadInput{
-		Sequence:         sequence,
-		UID:              auth.GetUidFromToken(context),
-		VideoFilePath:    videoFilePath,
-		VideoRelativeDir: variable.ConfigYml.GetString("FileUploadSetting.VideoUploadFileSavePath"),
-		VideoFileName:    saveFileName,
-		ContentType:      file.Header.Get("Content-Type"),
-		Description:      strings.TrimSpace(context.GetString(consts.ValidatorPrefix + "description")),
-		Tags:             strings.TrimSpace(context.GetString(consts.ValidatorPrefix + "tags")),
-		PrivateStatus:    int(context.GetFloat64(consts.ValidatorPrefix + "private_status")),
-	})
-}
 
 func UploadAvatar(context *gin.Context, savePath string) (r bool, finnalSavePath interface{}) {
 	file, _ := context.FormFile(variable.ConfigYml.GetString("FileUploadSetting.UploadFileField"))
@@ -135,20 +91,6 @@ func UploadCover(context *gin.Context, savePath string) (r bool, finnalSavePath 
 		variable.ZapLog.Error("snowflake failed to generate cover id: " + saveErr.Error())
 	}
 	return false, nil
-}
-
-func generateYearMonthPath(savePathPre string) (string, string) {
-	returnPath := variable.BasePath + variable.ConfigYml.GetString("FileUploadSetting.UploadFileReturnPath")
-	curYearMonth := time.Now().Format("2006_01")
-	newSavePathPre := savePathPre + curYearMonth
-	newReturnPathPre := returnPath + curYearMonth
-	if _, err := os.Stat(newSavePathPre); err != nil {
-		if err = os.MkdirAll(newSavePathPre, os.ModePerm); err != nil {
-			variable.ZapLog.Error("failed to create directory: " + err.Error())
-			return "", ""
-		}
-	}
-	return newSavePathPre + "/", newReturnPathPre + "/"
 }
 
 type preparedVideoUploadInput struct {

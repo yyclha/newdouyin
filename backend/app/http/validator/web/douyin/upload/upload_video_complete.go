@@ -8,10 +8,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// VideoComplete 定义视频上传完成请求参数。
 type VideoComplete struct {
 	UploadID
 }
 
+// CheckParams 校验视频上传完成参数并分发到控制器。
 func (v VideoComplete) CheckParams(ctx *gin.Context) {
 	if err := ctx.ShouldBind(&v); err != nil {
 		response.ValidatorError(ctx, err)

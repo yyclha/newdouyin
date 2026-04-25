@@ -7,14 +7,17 @@ import (
 	"gorm.io/gorm"
 )
 
+// CommentDiggModel 封装评论点赞和取消点赞的数据库操作。
 type CommentDiggModel struct {
 	*gorm.DB `gorm:"-" json:"-"`
 }
 
+// CreateCommentDiggFactory 创建带数据库连接的评论点赞模型实例。
 func CreateCommentDiggFactory(sqlType string) *CommentDiggModel {
 	return &CommentDiggModel{DB: model.UseDbConn(sqlType)}
 }
 
+// CommentDigg 对目标评论执行点赞或取消点赞操作。
 func (c *CommentDiggModel) CommentDigg(uid, commentID int64, action bool) bool {
 	tx := c.DB.Begin()
 	if tx.Error != nil {
@@ -83,6 +86,8 @@ func (c *CommentDiggModel) CommentDigg(uid, commentID int64, action bool) bool {
 		return false
 	}
 
-	newInteractionCache().updateCommentDigg(comment.AwemeID, commentID, uid, action)
+	cache := newInteractionCache()
+	cache.invalidateCommentItem(commentID)
+	cache.invalidateCommentList(comment.AwemeID)
 	return true
 }

@@ -5,6 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// Post 定义一条图文动态的数据结构。
 type Post struct {
 	*gorm.DB  `gorm:"-" json:"-"`
 	ID        string          `json:"id"`         // varchar(100)

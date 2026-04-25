@@ -11,6 +11,7 @@ import (
 	"strings"
 )
 
+// VideoChunk 定义视频分片上传请求参数。
 type VideoChunk struct {
 	UploadID
 	ChunkIndex
@@ -18,6 +19,7 @@ type VideoChunk struct {
 	ChunkHash
 }
 
+// CheckParams 校验视频分片上传参数并分发到控制器。
 func (v VideoChunk) CheckParams(ctx *gin.Context) {
 	tmpFile, err := ctx.FormFile(variable.ConfigYml.GetString("FileUploadSetting.UploadFileField"))
 	if err != nil {

@@ -10,8 +10,9 @@ import (
 	"strconv"
 )
 
+// VideoInit 定义视频上传初始化请求参数。
 type VideoInit struct {
-	UploadID
+	OptionalUploadID
 	FileName
 	FileSize
 	ChunkSize
@@ -22,6 +23,7 @@ type VideoInit struct {
 	PrivateStatus
 }
 
+// CheckParams 校验视频上传初始化参数并分发到控制器。
 func (v VideoInit) CheckParams(ctx *gin.Context) {
 	if err := ctx.ShouldBind(&v); err != nil {
 		response.ValidatorError(ctx, err)

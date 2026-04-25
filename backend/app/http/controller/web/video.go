@@ -15,9 +15,11 @@ import (
 	"golang.org/x/exp/rand"
 )
 
+// VideoController 处理视频互动和视频流相关的 HTTP 接口。
 type VideoController struct {
 }
 
+// VideoDigg 对视频执行点赞或取消点赞操作。
 func (v *VideoController) VideoDigg(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	var awemeId = ctx.GetString(consts.ValidatorPrefix + "aweme_id")
@@ -51,6 +53,7 @@ func (v *VideoController) VideoDigg(ctx *gin.Context) {
 	}
 }
 
+// VideoComment 发表一条视频评论。
 func (v *VideoController) VideoComment(ctx *gin.Context) {
 	var ipLocation = ctx.GetString(consts.ValidatorPrefix + "ip_location")
 	var awemeId = ctx.GetString(consts.ValidatorPrefix + "aweme_id")
@@ -62,9 +65,6 @@ func (v *VideoController) VideoComment(ctx *gin.Context) {
 	var nickname = ctx.GetString(consts.ValidatorPrefix + "nickname")
 	var avatar = ctx.GetString(consts.ValidatorPrefix + "avatar")
 	var awemeIDInt64, _ = strconv.ParseInt(awemeId, 10, 64)
-
-	// 如果前端传递了 short_id，则使用它；否则尝试从 token 对应的用户信息中获取（如果需要更严谨，可以在这里查询用户信息）
-	// 目前保持原有逻辑，直接透传参数
 
 	commentID, commentDone := video.CreateCommentFactory("").VideoComment(uid, awemeIDInt64, ipLocation, content, shortId, uniqueId, signature, nickname, avatar)
 	if commentDone {
@@ -78,9 +78,9 @@ func (v *VideoController) VideoComment(ctx *gin.Context) {
 			"msg":  "评论失败",
 		})
 	}
-
 }
 
+// CommentDigg 对评论执行点赞或取消点赞操作。
 func (v *VideoController) CommentDigg(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	var commentIDStr = ctx.GetString(consts.ValidatorPrefix + "comment_id")
@@ -114,6 +114,7 @@ func (v *VideoController) CommentDigg(ctx *gin.Context) {
 	}
 }
 
+// DeleteComment 删除指定评论。
 func (v *VideoController) DeleteComment(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	var commentIDStr = ctx.GetString(consts.ValidatorPrefix + "comment_id")
@@ -133,6 +134,7 @@ func (v *VideoController) DeleteComment(ctx *gin.Context) {
 	}
 }
 
+// VideoCollect 收藏或取消收藏指定视频。
 func (v *VideoController) VideoCollect(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	var awemeId = ctx.GetString(consts.ValidatorPrefix + "aweme_id")
@@ -166,6 +168,7 @@ func (v *VideoController) VideoCollect(ctx *gin.Context) {
 	}
 }
 
+// VideoShare 将视频分享给目标用户。
 func (v *VideoController) VideoShare(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	var awemeId = ctx.GetString(consts.ValidatorPrefix + "aweme_id")
@@ -186,6 +189,7 @@ func (v *VideoController) VideoShare(ctx *gin.Context) {
 	}
 }
 
+// GetComments 获取指定视频的评论列表。
 func (v *VideoController) GetComments(ctx *gin.Context) {
 	awemeIdStr := ctx.GetString(consts.ValidatorPrefix + "aweme_id")
 	awemeId, err := strconv.ParseInt(awemeIdStr, 10, 64)
@@ -210,6 +214,7 @@ func (v *VideoController) GetComments(ctx *gin.Context) {
 	}
 }
 
+// getInt64FromContext 从 Gin 上下文读取类 int64 值，并在需要时回退到默认值。
 func getInt64FromContext(ctx *gin.Context, key string, defaultValue int64) int64 {
 	value, exists := ctx.Get(key)
 	if !exists || value == nil {
@@ -251,6 +256,7 @@ func getInt64FromContext(ctx *gin.Context, key string, defaultValue int64) int64
 	}
 }
 
+// tryGetUIDFromHeaderToken 尝试解析请求头中的 Token，并返回对应用户 UID。
 func tryGetUIDFromHeaderToken(ctx *gin.Context) int64 {
 	token := ctx.GetHeader("Token")
 	if token == "" {
@@ -267,12 +273,14 @@ func tryGetUIDFromHeaderToken(ctx *gin.Context) int64 {
 	return customClaims.UID
 }
 
+// GetHistoryOther 获取除视频外的其他历史内容。
 func (v *VideoController) GetHistoryOther(context *gin.Context) {
-	// TODO 具体业务逻辑实现
+	// TODO 具体业务逻辑待实现
 }
 
+// GetLongVideoRecommended 获取推荐长视频列表。
 func (v *VideoController) GetLongVideoRecommended(ctx *gin.Context) {
-	// TODO 具体业务逻辑实现
+	// TODO 具体业务逻辑待实现
 	var uid = auth.GetUidFromToken(ctx)
 	var PageNo = ctx.GetFloat64(consts.ValidatorPrefix + "pageNo")
 	var PageSize = ctx.GetFloat64(consts.ValidatorPrefix + "pageSize")
@@ -287,6 +295,7 @@ func (v *VideoController) GetLongVideoRecommended(ctx *gin.Context) {
 	}
 }
 
+// GetVideoRecommended 获取推荐短视频流。
 func (v *VideoController) GetVideoRecommended(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	var Start = ctx.GetFloat64(consts.ValidatorPrefix + "start")
@@ -294,7 +303,6 @@ func (v *VideoController) GetVideoRecommended(ctx *gin.Context) {
 	list, total, ok := video.CreateVideoFactory("").GetVideoRecommended(uid, int64(Start), int64(PageSize))
 	if ok && len(list) > 0 {
 		rand.Seed(uint64(time.Now().UnixNano()))
-		// 打乱切片
 		rand.Shuffle(len(list), func(i, j int) {
 			list[i], list[j] = list[j], list[i]
 		})
@@ -307,14 +315,7 @@ func (v *VideoController) GetVideoRecommended(ctx *gin.Context) {
 	}
 }
 
+// GetHistory 获取历史记录列表。
 func (v *VideoController) GetHistory(context *gin.Context) {
-	// TODO 具体业务逻辑实现
-
-	//var id = context.GetFloat64(consts.ValidatorPrefix + "id")
-	//video := sv_home.CreateShortVideoFactory("").GetVideoById(int(id))
-	//if video.Id != 0 {
-	//	response.Success(context, consts.CurdStatusOkMsg, video)
-	//} else {
-	//	response.Fail(context, consts.CurdSelectFailCode, consts.CurdSelectFailMsg, "")
-	//}
+	// TODO 具体业务逻辑待实现
 }

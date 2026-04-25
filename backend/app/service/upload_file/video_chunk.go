@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"io"
 	"os"
 	"path"
@@ -44,8 +45,13 @@ type videoChunkUploadMeta struct {
 }
 
 func InitVideoChunkUpload(context *gin.Context) (r bool, finalSavePath interface{}, message string) {
+	uploadID := strings.TrimSpace(context.GetString(consts.ValidatorPrefix + "upload_id"))
+	if uploadID == "" {
+		uploadID = generateVideoChunkUploadID()
+	}
+
 	meta := videoChunkUploadMeta{
-		UploadID:      strings.TrimSpace(context.GetString(consts.ValidatorPrefix + "upload_id")),
+		UploadID:      uploadID,
 		UID:           auth.GetUidFromToken(context),
 		FileName:      strings.TrimSpace(context.GetString(consts.ValidatorPrefix + "file_name")),
 		ContentType:   strings.TrimSpace(context.GetString(consts.ValidatorPrefix + "content_type")),
@@ -352,9 +358,6 @@ func CompleteVideoChunkUpload(context *gin.Context, savePath string) (r bool, fi
 }
 
 func validateVideoChunkMeta(meta videoChunkUploadMeta) error {
-	if meta.UploadID == "" {
-		return fmt.Errorf("upload_id is required")
-	}
 	if meta.FileName == "" {
 		return fmt.Errorf("file_name is required")
 	}
@@ -420,6 +423,15 @@ func videoChunkSessionDir(uploadID string, uid int64) string {
 
 func videoChunkFileName(chunkIndex int) string {
 	return "chunk-" + fmt.Sprintf("%06d", chunkIndex) + ".part"
+}
+
+func generateVideoChunkUploadID() string {
+	if variable.SnowFlake != nil {
+		if sequence := variable.SnowFlake.GetId(); sequence > 0 {
+			return fmt.Sprintf("upload-%d", sequence)
+		}
+	}
+	return "upload-" + strings.ReplaceAll(uuid.NewString(), "-", "")
 }
 
 func readVideoChunkMeta(metaPath string) (videoChunkUploadMeta, error) {

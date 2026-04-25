@@ -86,6 +86,18 @@ type RedisClient struct {
 	client redis.Conn
 }
 
+func (r *RedisClient) Close() error {
+	return r.client.Close()
+}
+
+func (r *RedisClient) Err() error {
+	return r.client.Err()
+}
+
+func (r *RedisClient) Do(cmd string, args ...interface{}) (interface{}, error) {
+	return r.client.Do(cmd, args...)
+}
+
 // 为redis-go 客户端封装统一操作函数入口
 func (r *RedisClient) Execute(cmd string, args ...interface{}) (interface{}, error) {
 	return r.client.Do(cmd, args...)

@@ -2,6 +2,7 @@ package shop
 
 import "gorm.io/gorm"
 
+// Goods 定义一条商品记录的数据结构。
 type Goods struct {
 	*gorm.DB   `gorm:"-" json:"-"`
 	ID         int64   `json:"id"`         // bigint

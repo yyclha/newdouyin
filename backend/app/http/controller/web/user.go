@@ -13,9 +13,11 @@ import (
 	"strconv"
 )
 
+// UserController 处理用户相关的 HTTP 接口。
 type UserController struct {
 }
 
+// Register 处理用户注册请求。
 func (u *UserController) Register(ctx *gin.Context) {
 	var phone = ctx.GetString(consts.ValidatorPrefix + "phone")
 	var password = ctx.GetString(consts.ValidatorPrefix + "password")
@@ -27,6 +29,7 @@ func (u *UserController) Register(ctx *gin.Context) {
 	}
 }
 
+// Login 处理用户登录并签发 Token。
 func (u *UserController) Login(ctx *gin.Context) {
 	var phone = ctx.GetString(consts.ValidatorPrefix + "phone")
 	var password = ctx.GetString(consts.ValidatorPrefix + "password")
@@ -41,7 +44,7 @@ func (u *UserController) Login(ctx *gin.Context) {
 					"token":   userToken,
 				})
 			} else {
-				response.Fail(ctx, consts.CurdLoginFailCode, "Token记录失败，请检查数据库表 tb_auth_access_tokens 是否存在", gin.H{
+				response.Fail(ctx, consts.CurdLoginFailCode, "Token 记录失败，请检查数据表 tb_auth_access_tokens 是否存在", gin.H{
 					"isExist": true,
 					"uid":     strconv.FormatInt(userModel.UID, 10),
 					"token":   "",
@@ -49,7 +52,7 @@ func (u *UserController) Login(ctx *gin.Context) {
 			}
 
 		} else {
-			variable.ZapLog.Error("生成token出错!")
+			variable.ZapLog.Error("生成 token 出错")
 		}
 	} else {
 		response.Fail(ctx, consts.CurdLoginFailCode, consts.CurdLoginFailMsg, gin.H{
@@ -60,6 +63,7 @@ func (u *UserController) Login(ctx *gin.Context) {
 	}
 }
 
+// UpdateInfo 更新当前登录用户的资料字段。
 func (u *UserController) UpdateInfo(ctx *gin.Context) {
 	uid := auth.GetUidFromToken(ctx)
 	var operationType = ctx.GetFloat64(consts.ValidatorPrefix + "operation_type")
@@ -68,16 +72,17 @@ func (u *UserController) UpdateInfo(ctx *gin.Context) {
 	if updateState {
 		response.Success(ctx, consts.CurdStatusOkMsg, gin.H{
 			"data": updateState,
-			"msg":  "修改成功!",
+			"msg":  "修改成功",
 		})
 	} else {
 		response.Fail(ctx, consts.CurdUpdateFailCode, consts.CurdUpdateFailMsg, gin.H{
 			"data": updateState,
-			"msg":  "修改失败!",
+			"msg":  "修改失败",
 		})
 	}
 }
 
+// Attention 处理关注或取消关注用户的操作。
 func (u *UserController) Attention(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	var followingId = ctx.GetString(consts.ValidatorPrefix + "following_id")
@@ -111,6 +116,7 @@ func (u *UserController) Attention(ctx *gin.Context) {
 	}
 }
 
+// AwemeStatus 获取当前用户作品相关状态统计。
 func (u *UserController) AwemeStatus(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	awemeStatus, success := user.CreateUserFactory("").AwemeStatus(uid)
@@ -121,22 +127,7 @@ func (u *UserController) AwemeStatus(ctx *gin.Context) {
 	}
 }
 
-func (u *UserController) JsonInBlacklist(ctx *gin.Context) {
-	// TODO
-}
-
-func (u *UserController) GetUserInfo(context *gin.Context) {
-	// TODO 具体业务逻辑实现
-	response.Success(context, consts.CurdStatusOkMsg, "GetUserInfo-ok")
-	//var id = context.GetFloat64(consts.ValidatorPrefix + "id")
-	//video := sv_home.CreateShortVideoFactory("").GetVideoById(int(id))
-	//if video.Id != 0 {
-	//	response.Success(context, consts.CurdStatusOkMsg, video)
-	//} else {
-	//	response.Fail(context, consts.CurdSelectFailCode, consts.CurdSelectFailMsg, "")
-	//}
-}
-
+// GetUserVideoList 获取指定用户的视频列表。
 func (u *UserController) GetUserVideoList(ctx *gin.Context) {
 	uid, _ := strconv.Atoi(ctx.Query("uid"))
 	videoList, ok := video.CreateVideoFactory("").GetUserVideoList(int64(uid))
@@ -147,6 +138,7 @@ func (u *UserController) GetUserVideoList(ctx *gin.Context) {
 	}
 }
 
+// GetPanel 获取当前用户个人主页面板数据。
 func (u *UserController) GetPanel(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	userinfo, ok := user.CreateUserFactory("").GetPanel(uid)
@@ -157,6 +149,7 @@ func (u *UserController) GetPanel(ctx *gin.Context) {
 	}
 }
 
+// GetFriends 获取当前用户好友列表。
 func (u *UserController) GetFriends(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	friends, ok := user.CreateUserFactory("").GetFriends(uid)
@@ -167,6 +160,7 @@ func (u *UserController) GetFriends(ctx *gin.Context) {
 	}
 }
 
+// GetFollow 获取当前用户关注列表。
 func (u *UserController) GetFollow(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	follow, ok := user.CreateUserFactory("").GetFollow(uid)
@@ -177,6 +171,7 @@ func (u *UserController) GetFollow(ctx *gin.Context) {
 	}
 }
 
+// GetFans 获取当前用户粉丝列表。
 func (u *UserController) GetFans(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	fans, ok := user.CreateUserFactory("").GetFans(uid)
@@ -187,6 +182,7 @@ func (u *UserController) GetFans(ctx *gin.Context) {
 	}
 }
 
+// GetMyVideo 获取当前用户已发布的视频列表。
 func (u *UserController) GetMyVideo(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	var PageNo = ctx.GetFloat64(consts.ValidatorPrefix + "pageNo")
@@ -203,6 +199,7 @@ func (u *UserController) GetMyVideo(ctx *gin.Context) {
 	}
 }
 
+// GetMyPrivateVideo 获取当前用户私密视频列表。
 func (u *UserController) GetMyPrivateVideo(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	var PageNo = ctx.GetFloat64(consts.ValidatorPrefix + "pageNo")
@@ -219,6 +216,7 @@ func (u *UserController) GetMyPrivateVideo(ctx *gin.Context) {
 	}
 }
 
+// DeleteMyVideo 删除当前用户自己发布的视频。
 func (u *UserController) DeleteMyVideo(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	var awemeIdStr = ctx.GetString(consts.ValidatorPrefix + "aweme_id")
@@ -237,6 +235,7 @@ func (u *UserController) DeleteMyVideo(ctx *gin.Context) {
 	}
 }
 
+// GetMyLikeVideo 获取当前用户点赞过的视频列表。
 func (u *UserController) GetMyLikeVideo(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	var PageNo = ctx.GetFloat64(consts.ValidatorPrefix + "pageNo")
@@ -253,6 +252,7 @@ func (u *UserController) GetMyLikeVideo(ctx *gin.Context) {
 	}
 }
 
+// GetMyCollectVideo 获取当前用户收藏的视频列表。
 func (u *UserController) GetMyCollectVideo(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	var PageNo = ctx.GetFloat64(consts.ValidatorPrefix + "pageNo")
@@ -276,6 +276,7 @@ func (u *UserController) GetMyCollectVideo(ctx *gin.Context) {
 	}
 }
 
+// GetMyHistoryVideo 获取当前用户的视频观看历史。
 func (u *UserController) GetMyHistoryVideo(ctx *gin.Context) {
 	var uid = auth.GetUidFromToken(ctx)
 	var PageNo = ctx.GetFloat64(consts.ValidatorPrefix + "pageNo")
@@ -293,6 +294,7 @@ func (u *UserController) GetMyHistoryVideo(ctx *gin.Context) {
 	}
 }
 
+// GetMyHistoryOther 获取当前用户的其他历史记录。
 func (u *UserController) GetMyHistoryOther(ctx *gin.Context) {
 	response.Success(ctx, consts.CurdStatusOkMsg, "GetMyHistoryOther-ok")
 }

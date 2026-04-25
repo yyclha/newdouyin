@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// PostModel 封装图文动态相关的查询操作。
 type PostModel struct {
 	*gorm.DB  `gorm:"-" json:"-"`
 	ID        string          `json:"id"`         // varchar(100)
@@ -14,10 +15,12 @@ type PostModel struct {
 	NoteCard  json.RawMessage `json:"note_card"`  // json
 }
 
+// CreatePostFactory 创建带数据库连接的图文动态模型实例。
 func CreatePostFactory(sqlType string) *PostModel {
 	return &PostModel{DB: model.UseDbConn(sqlType)}
 }
 
+// GetPostRecommended 分页查询推荐图文动态列表。
 func (u *PostModel) GetPostRecommended(uid, pageNo, pageSize int64) (slice []Post, total int64, ok bool) {
 	sql1 := `
 		SELECT *

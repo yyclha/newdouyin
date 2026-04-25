@@ -10,31 +10,231 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/rand"
 	"gorm.io/gorm"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
 
+// sourceResource 保存删除视频时需要读取的资源字段。
 type sourceResource struct {
 	PlayAddr json.RawMessage `json:"play_addr"`
 	Cover    json.RawMessage `json:"cover"`
 }
 
+// mediaResourceURLList 表示通用的媒体 url_list 结构。
 type mediaResourceURLList struct {
 	URLList []string `json:"url_list"`
 }
 
+// VideoModel 封装视频流、个人主页和上传相关的数据访问逻辑。
 type VideoModel struct {
 	*gorm.DB `gorm:"-" json:"-"`
 }
 
+// CreateVideoFactory 创建带数据库连接的视频模型实例。
 func CreateVideoFactory(sqlType string) *VideoModel {
 	return &VideoModel{DB: model.UseDbConn(sqlType)}
 }
 
-func (v *VideoModel) normalizeVideoStats(slice []model.Video) {
-	newInteractionCache().normalizeStats(slice)
+// normalizeVideoContext 为查询结果补齐互动状态等派生字段。
+func (v *VideoModel) normalizeVideoContext(slice []model.Video, currentUID int64) {
+	cache := newInteractionCache()
+	cache.normalizeStats(slice)
+
+	for i := range slice {
+		awemeID, err := strconv.ParseInt(slice[i].AwemeID, 10, 64)
+		if err == nil && currentUID > 0 {
+			if liked, ok := cache.isVideoLikedByUser(currentUID, awemeID); ok {
+				slice[i].IsDigg = liked
+			} else if _, seedErr := cache.ensureDiggState(currentUID, awemeID); seedErr == nil {
+				if liked, ok = cache.isVideoLikedByUser(currentUID, awemeID); ok {
+					slice[i].IsDigg = liked
+				}
+			}
+		}
+
+		if slice[i].AuthorUserID == 0 || len(slice[i].Author) == 0 {
+			continue
+		}
+
+		totalFavorited, ok := cache.getUserTotalFavorited(slice[i].AuthorUserID)
+		if !ok {
+			totalFavorited, ok = cache.loadUserTotalFavorited(slice[i].AuthorUserID)
+		}
+		if !ok {
+			continue
+		}
+
+		author := model.User{}
+		if err := json.Unmarshal(slice[i].Author, &author); err != nil {
+			continue
+		}
+		author.TotalFavorited = totalFavorited
+		if raw, err := json.Marshal(author); err == nil {
+			slice[i].Author = raw
+		}
+	}
 }
 
+// buildInClausePlaceholders 生成 SQL IN 子句所需的占位符列表。
+func buildInClausePlaceholders(count int) string {
+	if count <= 0 {
+		return ""
+	}
+	return strings.TrimRight(strings.Repeat("?,", count), ",")
+}
+
+// getVideosByAwemeIDs 按传入 awemeID 的顺序查询视频列表。
+func (v *VideoModel) getVideosByAwemeIDs(awemeIDs []int64) (slice []model.Video, ok bool) {
+	if len(awemeIDs) == 0 {
+		return []model.Video{}, true
+	}
+
+	placeholders := buildInClausePlaceholders(len(awemeIDs))
+	sql := `
+		SELECT 
+			a.aweme_id,
+			a.video_desc,
+			a.create_time,
+			json_object(
+				'id', tm.id, 
+				'title', tm.title,
+				'author', tm.author,
+				'cover_medium', tm.cover_medium, 
+				'cover_thumb', tm.cover_thumb,
+				'play_url', tm.play_url,
+				'duration', tm.duration,
+				'user_count', tm.user_count,
+				'owner_nickname', tm.owner_nickname,
+				'is_original', tm.is_original,
+				'owner_id', tm.owner_id
+			) AS music,
+			json_object(
+				'play_addr', ts.play_addr,
+				'cover', ts.cover,
+				'poster', ts.poster,
+				'height', ts.height,
+				'width', ts.width,
+				'ratio', ts.ratio,
+				'use_static_cover', ts.use_static_cover,
+				'duration', ts.duration,
+				'horizontal_type', ts.horizontal_type
+			) AS video,
+			a.share_url,
+			json_object(
+				'admire_count', ts2.admire_count,
+				'comment_count', COALESCE(ts2.comment_count, 0),
+				'digg_count', ts2.digg_count,
+				'collect_count', ts2.collect_count,
+				'play_count', ts2.play_count,
+				'share_count', ts2.share_count
+			) AS statistics,
+		    json_object(
+			'uid', tu.uid,
+			'short_id', tu.short_id,
+			'unique_id', tu.unique_id,
+			'gender', tu.gender,
+			'user_age', tu.user_age,
+			'nickname', tu.nickname,
+			'country', tu.country,
+			'province', tu.province,
+			'district', tu.district,
+			'city', tu.city,
+			'signature', tu.signature,
+			'ip_location', tu.ip_location,
+			'birthday_hide_level', tu.birthday_hide_level,
+			'can_show_group_card', tu.can_show_group_card,
+			'aweme_count', tu.aweme_count,
+			'total_favorited', tu.total_favorited,
+			'favoriting_count', tu.favoriting_count,
+			'follower_count', tu.follower_count,
+			'following_count', tu.following_count,
+			'forward_count', tu.forward_count,
+			'public_collects_count', tu.public_collects_count,
+			'mplatform_followers_count', tu.mplatform_followers_count,
+			'max_follower_count', tu.max_follower_count,
+			'follow_status', tu.follow_status,
+			'follower_status', tu.follower_status,
+			'follower_request_status', tu.follower_request_status,
+			'cover_colour', tu.cover_colour,
+			'cover_url', tu.cover_url,
+			'white_cover_url', tu.white_cover_url,
+			'share_info', tu.share_info,
+			'commerce_info', tu.commerce_info,
+			'commerce_user_info', tu.commerce_user_info,
+			'commerce_user_level', tu.commerce_user_level,
+			'card_entries', tu.card_entries,
+			'avatar_small', tu.avatar_small,
+			'avatar_large', tu.avatar_large
+		   ) AS author,
+			a.status,
+			a.text_extra,
+			a.is_top,
+			a.share_info,
+			a.duration,
+			a.image_infos,
+			a.risk_infos,
+			a.position,
+			a.author_user_id,
+			a.prevent_download,
+			a.long_video,
+			a.aweme_control,
+			a.images,
+			a.suggest_words,
+			a.video_tag
+		FROM tb_videos AS a
+		LEFT JOIN tb_music AS tm ON a.music_id = tm.id
+		LEFT JOIN tb_source AS ts ON a.aweme_id = ts.id
+		LEFT JOIN tb_statistics AS ts2 ON a.aweme_id = ts2.id
+		LEFT JOIN tb_users AS tu ON a.author_user_id = tu.uid
+		WHERE a.aweme_id IN (` + placeholders + `)
+		  AND JSON_EXTRACT(a.status, '$.private_status') = 0`
+
+	args := make([]interface{}, 0, len(awemeIDs))
+	for _, awemeID := range awemeIDs {
+		args = append(args, awemeID)
+	}
+
+	result := v.Raw(sql, args...).Find(&slice)
+	if result.Error != nil {
+		variable.ZapLog.Error("getVideosByAwemeIDs SQL执行出错!", zap.Error(result.Error))
+		return nil, false
+	}
+
+	orderMap := make(map[string]int, len(awemeIDs))
+	for idx, awemeID := range awemeIDs {
+		orderMap[strconv.FormatInt(awemeID, 10)] = idx
+	}
+	sort.SliceStable(slice, func(i, j int) bool {
+		return orderMap[slice[i].AwemeID] < orderMap[slice[j].AwemeID]
+	})
+	return slice, true
+}
+
+// loadUserLikedVideosFromDB 从 MySQL 加载用户点赞视频及点赞时间。
+func (v *VideoModel) loadUserLikedVideosFromDB(uid int64) ([]userLikedVideoItem, bool) {
+	var rows []struct {
+		AwemeID    int64 `gorm:"column:aweme_id"`
+		CreateTime int64 `gorm:"column:create_time"`
+	}
+	sql := `SELECT aweme_id, create_time FROM tb_diggs WHERE uid = ? ORDER BY create_time DESC`
+	if err := v.Raw(sql, uid).Scan(&rows).Error; err != nil {
+		variable.ZapLog.Error("loadUserLikedVideosFromDB SQL执行出错!", zap.Error(err))
+		return nil, false
+	}
+
+	items := make([]userLikedVideoItem, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, userLikedVideoItem{
+			AwemeID:    row.AwemeID,
+			CreateTime: row.CreateTime,
+		})
+	}
+	return items, true
+}
+
+// GetMyVideo 分页查询当前用户公开发布的视频列表。
 func (v *VideoModel) GetMyVideo(Uid, pageNo, pageSize int64) (slice []model.Video, total int64, ok bool) {
 	sql1 := `
 		SELECT 
@@ -152,11 +352,12 @@ func (v *VideoModel) GetMyVideo(Uid, pageNo, pageSize int64) (slice []model.Vide
 		ok = false
 		return
 	}
-	v.normalizeVideoStats(slice)
+	v.normalizeVideoContext(slice, Uid)
 	ok = true
 	return
 }
 
+// GetMyPrivateVideo 分页查询当前用户私密视频列表。
 func (v *VideoModel) GetMyPrivateVideo(Uid, pageNo, pageSize int64) (slice []model.Video, total int64, ok bool) {
 	sql1 := `
 		SELECT 
@@ -270,11 +471,12 @@ func (v *VideoModel) GetMyPrivateVideo(Uid, pageNo, pageSize int64) (slice []mod
 		ok = false
 		return
 	}
-	v.normalizeVideoStats(slice)
+	v.normalizeVideoContext(slice, Uid)
 	ok = true
 	return
 }
 
+// DeleteMyVideo 删除当前用户发布的视频，并清理相关资源文件。
 func (v *VideoModel) DeleteMyVideo(uid, awemeID int64) bool {
 	tx := v.DB.Begin()
 	if tx.Error != nil {
@@ -350,6 +552,7 @@ func (v *VideoModel) DeleteMyVideo(uid, awemeID int64) bool {
 	return true
 }
 
+// parseMediaResourceURLs 从媒体 JSON 结构中提取一层 url_list 地址。
 func parseMediaResourceURLs(raw json.RawMessage) []string {
 	if len(raw) == 0 || string(raw) == "null" {
 		return nil
@@ -371,7 +574,54 @@ func parseMediaResourceURLs(raw json.RawMessage) []string {
 	return urls
 }
 
+// GetMyLikeVideo 分页查询当前用户点赞过的视频列表。
 func (v *VideoModel) GetMyLikeVideo(Uid, pageNo, pageSize int64) (slice []model.Video, total int64, ok bool) {
+	cache := NewUserLikeStatusCache()
+	if awemeIDs, cachedTotal, cached := cache.GetUserLikedVideosPage(Uid, pageNo, pageSize); cached {
+		total = cachedTotal
+		if len(awemeIDs) == 0 {
+			return []model.Video{}, total, true
+		}
+		if loaded, ok := v.getVideosByAwemeIDs(awemeIDs); ok {
+			slice = loaded
+			v.normalizeVideoContext(slice, Uid)
+			return slice, total, true
+		}
+	}
+
+	if items, loaded := v.loadUserLikedVideosFromDB(Uid); loaded {
+		cache.SetUserLikedVideosWithScores(Uid, items)
+		total = int64(len(items))
+		if total == 0 {
+			return []model.Video{}, 0, true
+		}
+
+		start := pageNo * pageSize
+		if start >= total {
+			return []model.Video{}, total, true
+		}
+		end := start + pageSize
+		if end > total {
+			end = total
+		}
+
+		awemeIDs := make([]int64, 0, end-start)
+		for _, item := range items[start:end] {
+			awemeIDs = append(awemeIDs, item.AwemeID)
+		}
+		if len(awemeIDs) == 0 {
+			return []model.Video{}, total, true
+		}
+
+		loadedVideos, ok := v.getVideosByAwemeIDs(awemeIDs)
+		if !ok {
+			return nil, 0, false
+		}
+		slice = loadedVideos
+		v.normalizeVideoContext(slice, Uid)
+		return slice, total, true
+	}
+
 	sql1 := `
 		SELECT 
 			a.aweme_id,
@@ -497,11 +747,12 @@ func (v *VideoModel) GetMyLikeVideo(Uid, pageNo, pageSize int64) (slice []model.
 		ok = false
 		return
 	}
-	v.normalizeVideoStats(slice)
+	v.normalizeVideoContext(slice, Uid)
 	ok = true
 	return
 }
 
+// GetMyCollectVideo 分页查询当前用户收藏的视频列表。
 func (v *VideoModel) GetMyCollectVideo(Uid, pageNo, pageSize int64) (slice []model.Video, total int64, ok bool) {
 	sql1 := `
 		SELECT 
@@ -628,11 +879,12 @@ func (v *VideoModel) GetMyCollectVideo(Uid, pageNo, pageSize int64) (slice []mod
 		ok = false
 		return
 	}
-	v.normalizeVideoStats(slice)
+	v.normalizeVideoContext(slice, Uid)
 	ok = true
 	return
 }
 
+// GetMyHistoryVideo 分页查询当前用户观看历史中的视频列表。
 func (v *VideoModel) GetMyHistoryVideo(Uid, pageNo, pageSize int64) (slice []model.Video, total int64, ok bool) {
 	sql1 := `
 		SELECT 
@@ -759,15 +1011,17 @@ func (v *VideoModel) GetMyHistoryVideo(Uid, pageNo, pageSize int64) (slice []mod
 		ok = false
 		return
 	}
-	v.normalizeVideoStats(slice)
+	v.normalizeVideoContext(slice, Uid)
 	ok = true
 	return
 }
 
+// GetMyHistoryOther 预留给非视频类历史记录查询。
 func (v *VideoModel) GetMyHistoryOther(Uid, pageNo, pageSize int64) {
 	return
 }
 
+// GetVideoRecommended 随机加载一页推荐公开视频。
 func (v *VideoModel) GetVideoRecommended(Uid, start, pageSize int64) (slice []model.Video, total int64, ok bool) {
 	sql1 := `
 		SELECT 
@@ -890,11 +1144,12 @@ func (v *VideoModel) GetVideoRecommended(Uid, start, pageSize int64) (slice []mo
 		ok = false
 		return
 	}
-	v.normalizeVideoStats(slice)
+	v.normalizeVideoContext(slice, Uid)
 	ok = true
 	return
 }
 
+// GetLongVideoRecommended 分页查询推荐长视频列表。
 func (v *VideoModel) GetLongVideoRecommended(Uid, PageNo, pageSize int64) (slice []model.Video, total int64, ok bool) {
 	sql1 := `
 		SELECT 
@@ -1011,11 +1266,12 @@ func (v *VideoModel) GetLongVideoRecommended(Uid, PageNo, pageSize int64) (slice
 		ok = false
 		return
 	}
-	v.normalizeVideoStats(slice)
+	v.normalizeVideoContext(slice, 0)
 	ok = true
 	return
 }
 
+// GetUserVideoList 查询目标用户的全部公开视频列表。
 func (v *VideoModel) GetUserVideoList(Uid int64) (slice []model.Video, ok bool) {
 	sql1 := `
 		SELECT 
@@ -1122,15 +1378,17 @@ func (v *VideoModel) GetUserVideoList(Uid int64) (slice []model.Video, ok bool) 
 		ok = false
 		return
 	}
-	v.normalizeVideoStats(slice)
+	v.normalizeVideoContext(slice, Uid)
 	ok = true
 	return
 }
 
+// InsertVideo 为当前登录用户创建一条新视频记录。
 func (v *VideoModel) InsertVideo(ctx *gin.Context, playUrl, videoDesc, coverUrl string, privateStatus int) bool {
 	return v.InsertVideoByUID(auth.GetUidFromToken(ctx), playUrl, videoDesc, coverUrl, privateStatus)
 }
 
+// InsertVideoByUID 为指定作者 UID 创建一条新视频记录。
 func (v *VideoModel) InsertVideoByUID(authorUserId int64, playUrl, videoDesc, coverUrl string, privateStatus int) bool {
 	// 开启事务
 	tx := v.DB.Begin()
@@ -1232,6 +1490,7 @@ func (v *VideoModel) InsertVideoByUID(authorUserId int64, playUrl, videoDesc, co
 	return true
 }
 
+// UpdateAvatar 更新当前用户的头像地址信息。
 func (v *VideoModel) UpdateAvatar(ctx *gin.Context, urlAddr string) bool {
 	uid := auth.GetUidFromToken(ctx)
 	sql := `UPDATE tb_users SET avatar_small=? ,avatar_large=? WHERE uid=?`
@@ -1246,6 +1505,7 @@ func (v *VideoModel) UpdateAvatar(ctx *gin.Context, urlAddr string) bool {
 	return true
 }
 
+// UpdateCover 更新当前用户的封面地址信息。
 func (v *VideoModel) UpdateCover(ctx *gin.Context, urlAddr string) bool {
 	uid := auth.GetUidFromToken(ctx)
 	sql := `UPDATE tb_users SET cover_url=? WHERE uid=?`

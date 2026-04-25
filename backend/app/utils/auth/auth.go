@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// GetUidFromToken 从 Gin 上下文中读取当前请求对应的用户 UID。
 func GetUidFromToken(ctx *gin.Context) (uid int64) {
 	tokenKey := variable.ConfigYml.GetString("Token.BindContextKeyName")
 	userToken, exists := ctx.Get(tokenKey)

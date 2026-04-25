@@ -5,20 +5,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-/**
-websocket 想要了解更多具体细节请参见以下文档
-文档地址：https://github.com/gorilla/websocket/tree/master/examples
+/*
+WebSocket 相关实现可参考 gorilla/websocket 官方示例：
+https://github.com/gorilla/websocket/tree/master/examples
 */
 
+// Ws 处理 WebSocket 握手和消息分发入口。
 type Ws struct {
 }
 
-// OnOpen 主要解决握手+协议升级
+// OnOpen 处理 WebSocket 握手并完成协议升级。
 func (w *Ws) OnOpen(context *gin.Context) (*serviceWs.Ws, bool) {
 	return (&serviceWs.Ws{}).OnOpen(context)
 }
 
-// OnMessage 处理业务消息
+// OnMessage 处理 WebSocket 业务消息。
 func (w *Ws) OnMessage(serviceWs *serviceWs.Ws, context *gin.Context) {
 	serviceWs.OnMessage(context)
 }

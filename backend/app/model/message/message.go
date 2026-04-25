@@ -8,6 +8,7 @@ import (
 	"strconv"
 )
 
+// MsgModel 封装消息相关的数据库读写操作。
 type MsgModel struct {
 	*gorm.DB   `gorm:"-" json:"-"`
 	ID         int64  `json:"id" db:"bigint"`       // bigint
@@ -20,10 +21,12 @@ type MsgModel struct {
 	DeleteTime int    `json:"delete_time" db:"int"` // int
 }
 
+// CreateMsgFactory 创建带数据库连接的消息模型实例。
 func CreateMsgFactory(sqlType string) *MsgModel {
 	return &MsgModel{DB: model.UseDbConn(sqlType)}
 }
 
+// SendMsg 向消息表写入一条私信记录。
 func (m *MsgModel) SendMsg(txUid, rxUid int64, msgType int, msgData string, readState int, createTime int) bool {
 	sql := `INSERT INTO tb_messages (tx_uid, rx_uid, msg_type, msg_data, read_state, create_time) VALUES (?, ?, ?, ?, ?, ?);`
 	result := m.Exec(sql, txUid, rxUid, msgType, msgData, readState, createTime)
@@ -34,6 +37,7 @@ func (m *MsgModel) SendMsg(txUid, rxUid int64, msgType int, msgData string, read
 	}
 }
 
+// GetAllMsg 查询当前用户相关的全部会话，并按对方用户 ID 分组。
 func (m *MsgModel) GetAllMsg(uid int64) (allMsg map[string][]Message, ok bool) {
 	// 初始化返回的 map
 	allMsg = make(map[string][]Message)

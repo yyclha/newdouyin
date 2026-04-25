@@ -18,11 +18,15 @@ const (
 	videoCommentItemTTLSeconds    = 300
 	videoUserLikesCacheTTLSeconds = 600
 	videoCommentIndexLimit        = 500
+	videoDiggStateTTLSeconds      = 86400 * 30
+	videoDiggVersionTTLSeconds    = 86400 * 30
 )
 
+// interactionCache 封装视频互动相关缓存的 Redis 访问逻辑。
 type interactionCache struct {
 }
 
+// newInteractionCache 创建一个视频互动缓存操作助手。
 func newInteractionCache() *interactionCache {
 	return &interactionCache{}
 }
@@ -55,8 +59,20 @@ func (c *interactionCache) userLikeVideosKey(uid int64) string {
 	return "user:likes:" + strconv.FormatInt(uid, 10)
 }
 
+func (c *interactionCache) userLikeIndexKey(uid int64) string {
+	return "user:likes:index:" + strconv.FormatInt(uid, 10)
+}
+
 func (c *interactionCache) userTotalFavoritedKey(uid int64) string {
 	return "user:total_favorited:" + strconv.FormatInt(uid, 10)
+}
+
+func (c *interactionCache) diggStateKey(uid, awemeID int64) string {
+	return "video:digg:state:" + strconv.FormatInt(uid, 10) + ":" + strconv.FormatInt(awemeID, 10)
+}
+
+func (c *interactionCache) diggVersionKey(uid, awemeID int64) string {
+	return "video:digg:version:" + strconv.FormatInt(uid, 10) + ":" + strconv.FormatInt(awemeID, 10)
 }
 
 func (c *interactionCache) getStats(awemeID int64) (model.Statistics, bool) {
@@ -125,6 +141,16 @@ func (c *interactionCache) getOrLoadStats(awemeID int64) (model.Statistics, bool
 		return stats, true
 	}
 	return c.loadStatsFromDB(awemeID)
+}
+
+func (c *interactionCache) invalidateStats(awemeID int64) {
+	client := c.redisClient()
+	if client == nil {
+		return
+	}
+	defer client.ReleaseOneRedisClient()
+
+	_, _ = client.Execute("DEL", c.statsKey(awemeID))
 }
 
 func (c *interactionCache) incrStat(awemeID int64, field string, delta int64) {
@@ -323,6 +349,34 @@ func (c *interactionCache) removeComment(awemeID, commentID int64) {
 	_, _ = client.Execute("EXPIRE", c.commentsIndexKey(awemeID), videoCommentsCacheTTLSeconds)
 }
 
+func (c *interactionCache) invalidateCommentItem(commentID int64) {
+	client := c.redisClient()
+	if client == nil {
+		return
+	}
+	defer client.ReleaseOneRedisClient()
+
+	_, _ = client.Execute("DEL", c.commentItemKey(commentID))
+	_, _ = client.Execute("DEL", c.commentDiggUsersKey(commentID))
+}
+
+func (c *interactionCache) invalidateCommentList(awemeID int64) {
+	client := c.redisClient()
+	if client == nil {
+		return
+	}
+	defer client.ReleaseOneRedisClient()
+
+	indexKey := c.commentsIndexKey(awemeID)
+	commentIDs, err := redis.Int64s(client.Execute("ZREVRANGE", indexKey, 0, videoCommentIndexLimit-1))
+	if err == nil {
+		for _, commentID := range commentIDs {
+			_, _ = client.Execute("DEL", c.commentItemKey(commentID))
+		}
+	}
+	_, _ = client.Execute("DEL", indexKey)
+}
+
 func (c *interactionCache) updateCommentDigg(awemeID, commentID, uid int64, action bool) {
 	client := c.redisClient()
 	if client == nil {
@@ -386,6 +440,45 @@ func (c *interactionCache) getUserLikedVideos(uid int64) ([]int64, bool) {
 	return ids, true
 }
 
+func (c *interactionCache) getUserLikedVideosPage(uid, pageNo, pageSize int64) ([]int64, int64, bool) {
+	if pageNo < 0 || pageSize <= 0 {
+		return nil, 0, false
+	}
+
+	client := c.redisClient()
+	if client == nil {
+		return nil, 0, false
+	}
+	defer client.ReleaseOneRedisClient()
+
+	indexKey := c.userLikeIndexKey(uid)
+	exists, err := client.Int(client.Execute("EXISTS", indexKey))
+	if err != nil || exists == 0 {
+		return nil, 0, false
+	}
+
+	total, err := client.Int64(client.Execute("ZCARD", indexKey))
+	if err != nil {
+		return nil, 0, false
+	}
+
+	start := pageNo * pageSize
+	stop := start + pageSize - 1
+	values, err := client.Strings(client.Execute("ZREVRANGE", indexKey, start, stop))
+	if err != nil {
+		return nil, 0, false
+	}
+
+	ids := make([]int64, 0, len(values))
+	for _, value := range values {
+		id, parseErr := strconv.ParseInt(value, 10, 64)
+		if parseErr == nil {
+			ids = append(ids, id)
+		}
+	}
+	return ids, total, true
+}
+
 func (c *interactionCache) setUserLikedVideos(uid int64, awemeIDs []int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -409,6 +502,39 @@ func (c *interactionCache) setUserLikedVideos(uid int64, awemeIDs []int64) {
 	_, _ = client.Execute("EXPIRE", key, videoUserLikesCacheTTLSeconds)
 }
 
+func (c *interactionCache) setUserLikedVideosWithScores(uid int64, items []userLikedVideoItem) {
+	client := c.redisClient()
+	if client == nil {
+		return
+	}
+	defer client.ReleaseOneRedisClient()
+
+	setKey := c.userLikeVideosKey(uid)
+	indexKey := c.userLikeIndexKey(uid)
+	_, _ = client.Execute("DEL", setKey)
+	_, _ = client.Execute("DEL", indexKey)
+	if len(items) > 0 {
+		setArgs := make([]interface{}, 0, len(items)+1)
+		setArgs = append(setArgs, setKey)
+		indexArgs := make([]interface{}, 0, len(items)*2+1)
+		indexArgs = append(indexArgs, indexKey)
+		for _, item := range items {
+			setArgs = append(setArgs, item.AwemeID)
+			indexArgs = append(indexArgs, item.CreateTime, item.AwemeID)
+		}
+		if _, err := client.Execute("SADD", setArgs...); err != nil {
+			variable.ZapLog.Error("failed to cache user like videos", zap.Error(err), zap.Int64("uid", uid))
+			return
+		}
+		if _, err := client.Execute("ZADD", indexArgs...); err != nil {
+			variable.ZapLog.Error("failed to cache user like video index", zap.Error(err), zap.Int64("uid", uid))
+			return
+		}
+	}
+	_, _ = client.Execute("EXPIRE", setKey, videoUserLikesCacheTTLSeconds)
+	_, _ = client.Execute("EXPIRE", indexKey, videoUserLikesCacheTTLSeconds)
+}
+
 func (c *interactionCache) addUserLikedVideo(uid, awemeID int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -424,6 +550,27 @@ func (c *interactionCache) addUserLikedVideo(uid, awemeID int64) {
 	_, _ = client.Execute("EXPIRE", key, videoUserLikesCacheTTLSeconds)
 }
 
+func (c *interactionCache) addUserLikedVideoAt(uid, awemeID, createTime int64) {
+	client := c.redisClient()
+	if client == nil {
+		return
+	}
+	defer client.ReleaseOneRedisClient()
+
+	setKey := c.userLikeVideosKey(uid)
+	indexKey := c.userLikeIndexKey(uid)
+	if _, err := client.Execute("SADD", setKey, awemeID); err != nil {
+		variable.ZapLog.Error("failed to add user like video cache", zap.Error(err), zap.Int64("uid", uid), zap.Int64("aweme_id", awemeID))
+		return
+	}
+	if _, err := client.Execute("ZADD", indexKey, createTime, awemeID); err != nil {
+		variable.ZapLog.Error("failed to add user like video index cache", zap.Error(err), zap.Int64("uid", uid), zap.Int64("aweme_id", awemeID))
+		return
+	}
+	_, _ = client.Execute("EXPIRE", setKey, videoUserLikesCacheTTLSeconds)
+	_, _ = client.Execute("EXPIRE", indexKey, videoUserLikesCacheTTLSeconds)
+}
+
 func (c *interactionCache) removeUserLikedVideo(uid, awemeID int64) {
 	client := c.redisClient()
 	if client == nil {
@@ -436,7 +583,12 @@ func (c *interactionCache) removeUserLikedVideo(uid, awemeID int64) {
 		variable.ZapLog.Error("failed to remove user like video cache", zap.Error(err), zap.Int64("uid", uid), zap.Int64("aweme_id", awemeID))
 		return
 	}
+	if _, err := client.Execute("ZREM", c.userLikeIndexKey(uid), awemeID); err != nil && err != redis.ErrNil {
+		variable.ZapLog.Error("failed to remove user like video index cache", zap.Error(err), zap.Int64("uid", uid), zap.Int64("aweme_id", awemeID))
+		return
+	}
 	_, _ = client.Execute("EXPIRE", key, videoUserLikesCacheTTLSeconds)
+	_, _ = client.Execute("EXPIRE", c.userLikeIndexKey(uid), videoUserLikesCacheTTLSeconds)
 }
 
 func (c *interactionCache) isVideoLikedByUser(uid, awemeID int64) (bool, bool) {
@@ -446,7 +598,12 @@ func (c *interactionCache) isVideoLikedByUser(uid, awemeID int64) (bool, bool) {
 	}
 	defer client.ReleaseOneRedisClient()
 
-	value, err := client.Int(client.Execute("SISMEMBER", c.userLikeVideosKey(uid), awemeID))
+	value, err := client.Int(client.Execute("GET", c.diggStateKey(uid, awemeID)))
+	if err == nil {
+		return value == 1, true
+	}
+
+	value, err = client.Int(client.Execute("SISMEMBER", c.userLikeVideosKey(uid), awemeID))
 	if err == nil {
 		return value == 1, true
 	}
@@ -564,6 +721,51 @@ func (c *interactionCache) incrUserTotalFavorited(uid, delta int64) {
 	_, _ = client.Execute("EXPIRE", key, videoStatsCacheTTLSeconds)
 }
 
+func (c *interactionCache) ensureDiggState(uid, awemeID int64) (bool, error) {
+	client := c.redisClient()
+	if client == nil {
+		return false, nil
+	}
+	defer client.ReleaseOneRedisClient()
+
+	stateKey := c.diggStateKey(uid, awemeID)
+	exists, err := client.Int(client.Execute("EXISTS", stateKey))
+	if err == nil && exists == 1 {
+		return true, nil
+	}
+
+	var count int64
+	sql := `SELECT COUNT(1) FROM tb_diggs WHERE uid = ? AND aweme_id = ? LIMIT 1`
+	if err := CreateDiggFactory("").Raw(sql, uid, awemeID).Scan(&count).Error; err != nil {
+		variable.ZapLog.Error("failed to load digg state from db", zap.Error(err), zap.Int64("uid", uid), zap.Int64("aweme_id", awemeID))
+		return false, err
+	}
+
+	stateValue := 0
+	if count > 0 {
+		stateValue = 1
+	}
+	if _, err := client.Execute("SETEX", stateKey, videoDiggStateTTLSeconds, stateValue); err != nil {
+		variable.ZapLog.Error("failed to seed digg state cache", zap.Error(err), zap.Int64("uid", uid), zap.Int64("aweme_id", awemeID))
+		return false, err
+	}
+	return true, nil
+}
+
+func (c *interactionCache) getDiggVersion(uid, awemeID int64) (int64, bool) {
+	client := c.redisClient()
+	if client == nil {
+		return 0, false
+	}
+	defer client.ReleaseOneRedisClient()
+
+	version, err := client.Int64(client.Execute("GET", c.diggVersionKey(uid, awemeID)))
+	if err != nil {
+		return 0, false
+	}
+	return version, true
+}
+
 func parseInt64(value string) int64 {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -654,26 +856,53 @@ func currentUnix() int64 {
 	return time.Now().Unix()
 }
 
+// UserLikeStatusCache 对外暴露更聚焦的用户点赞状态缓存接口。
 type UserLikeStatusCache struct {
 	cache *interactionCache
 }
 
+// userLikedVideoItem 保存一个点赞视频及其点赞时间。
+type userLikedVideoItem struct {
+	AwemeID    int64
+	CreateTime int64
+}
+
+// NewUserLikeStatusCache 创建用户点赞状态缓存助手。
 func NewUserLikeStatusCache() *UserLikeStatusCache {
 	return &UserLikeStatusCache{cache: newInteractionCache()}
 }
 
+// GetUserLikedVideos 返回当前用户缓存中的全部点赞视频 ID。
 func (c *UserLikeStatusCache) GetUserLikedVideos(uid int64) ([]int64, bool) {
 	return c.cache.getUserLikedVideos(uid)
 }
 
+// SetUserLikedVideos 将用户点赞视频 ID 列表写入缓存。
 func (c *UserLikeStatusCache) SetUserLikedVideos(uid int64, awemeIDs []int64) {
 	c.cache.setUserLikedVideos(uid, awemeIDs)
 }
 
+// GetUserLikedVideosPage 返回用户点赞视频的一个缓存分页及总数。
+func (c *UserLikeStatusCache) GetUserLikedVideosPage(uid, pageNo, pageSize int64) ([]int64, int64, bool) {
+	return c.cache.getUserLikedVideosPage(uid, pageNo, pageSize)
+}
+
+// SetUserLikedVideosWithScores 将带时间戳的点赞视频列表写入缓存。
+func (c *UserLikeStatusCache) SetUserLikedVideosWithScores(uid int64, items []userLikedVideoItem) {
+	c.cache.setUserLikedVideosWithScores(uid, items)
+}
+
+// GetUserTotalFavorited 返回作者在缓存中的总获赞数。
 func (c *UserLikeStatusCache) GetUserTotalFavorited(uid int64) (int64, bool) {
 	return c.cache.getUserTotalFavorited(uid)
 }
 
+// LoadUserTotalFavorited 从存储中重载作者总获赞数到缓存。
 func (c *UserLikeStatusCache) LoadUserTotalFavorited(uid int64) (int64, bool) {
 	return c.cache.loadUserTotalFavorited(uid)
+}
+
+// IsVideoLikedByUser 检查用户是否已点赞目标视频。
+func (c *UserLikeStatusCache) IsVideoLikedByUser(uid, awemeID int64) (bool, bool) {
+	return c.cache.isVideoLikedByUser(uid, awemeID)
 }
