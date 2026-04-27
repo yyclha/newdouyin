@@ -37,28 +37,23 @@ function _updateItem(props, key, val) {
 async function loved() {
   // 切换当前点赞状态
   try {
+    const nextLoved = !props.item.isLoved
     // 调用点赞 API，传入 videoId 和新状态
     console.log('aweme_id:', props)
     const res = await videoDigg(
       {},
       {
         aweme_id: props.item.aweme_id,
-        action: !props.item.isLoved
+        action: nextLoved
       }
     )
     if (res.success) {
-      // 更新 isLoved 状态
-      setTimeout(() => {
-        _updateItem(props, 'isLoved', !props.item.isLoved)
-      }, 100)
-      // 更新点赞数量
-      if (!props.item.isLoved) {
-        // eslint-disable-next-line vue/no-mutating-props
-        props.item.statistics.digg_count++
-      } else {
-        // eslint-disable-next-line vue/no-mutating-props
-        props.item.statistics.digg_count--
-      }
+      const old = cloneDeep(props.item)
+      old.isLoved = nextLoved
+      const currentCount = Number(old.statistics?.digg_count || 0)
+      old.statistics.digg_count = nextLoved ? currentCount + 1 : Math.max(currentCount - 1, 0)
+      emit('update:item', old)
+      bus.emit(EVENT_KEY.UPDATE_ITEM, { position: position.value, item: old })
     } else {
       console.error('点赞请求失败:', res.data.msg)
     }

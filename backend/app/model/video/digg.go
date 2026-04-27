@@ -9,6 +9,7 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"time"
 )
 
@@ -129,6 +130,8 @@ func (v *DiggModel) VideoDigg(uid, awemeID int64, action bool) bool {
 		result, err := v.applyVideoDiggRedis(cache, uid, awemeID, authorUID, action)
 		if err == nil {
 			if !result.Changed {
+				v.syncVideoDiggCounters(awemeID, authorUID)
+				v.refreshVideoDiggCache(uid, awemeID, authorUID, action)
 				return true
 			}
 
@@ -176,6 +179,7 @@ func (v *DiggModel) HandleAsyncDiggEvent(event videodiggmq.VideoDiggEvent) error
 	if ok := v.persistVideoDiggState(event.UID, event.AwemeID, event.AuthorUID, event.Action); !ok {
 		return errors.New("persist video digg state failed")
 	}
+	v.refreshVideoDiggCache(event.UID, event.AwemeID, event.AuthorUID, event.Action)
 	return nil
 }
 
@@ -286,32 +290,6 @@ func (v *DiggModel) persistVideoDiggState(uid, awemeID, authorUID int64, action 
 			variable.ZapLog.Error("VideoDigg failed to insert digg row", zap.Error(result.Error))
 			return false
 		}
-
-		if result.RowsAffected == 0 {
-			if err := tx.Commit().Error; err != nil {
-				variable.ZapLog.Error("VideoDigg failed to commit no-op like", zap.Error(err))
-				return false
-			}
-			return true
-		}
-
-		result = tx.Exec(
-			`INSERT INTO tb_statistics (id, digg_count) VALUES (?, 1)
-			 ON DUPLICATE KEY UPDATE digg_count = COALESCE(digg_count, 0) + 1`,
-			awemeID,
-		)
-		if result.Error != nil {
-			tx.Rollback()
-			variable.ZapLog.Error("VideoDigg failed to update statistics", zap.Error(result.Error))
-			return false
-		}
-
-		result = tx.Exec(
-			`UPDATE tb_users
-			 SET total_favorited = COALESCE(total_favorited, 0) + 1
-			 WHERE uid = ?`,
-			authorUID,
-		)
 	} else {
 		result = tx.Exec(undiggSQL, uid, awemeID)
 		if result.Error != nil {
@@ -319,38 +297,16 @@ func (v *DiggModel) persistVideoDiggState(uid, awemeID, authorUID int64, action 
 			variable.ZapLog.Error("VideoDigg failed to delete digg row", zap.Error(result.Error))
 			return false
 		}
-
-		if result.RowsAffected == 0 {
-			if err := tx.Commit().Error; err != nil {
-				variable.ZapLog.Error("VideoDigg failed to commit no-op unlike", zap.Error(err))
-				return false
-			}
-			return true
-		}
-
-		result = tx.Exec(
-			`UPDATE tb_statistics
-			 SET digg_count = GREATEST(COALESCE(digg_count, 0) - 1, 0)
-			 WHERE id = ?`,
-			awemeID,
-		)
-		if result.Error != nil {
-			tx.Rollback()
-			variable.ZapLog.Error("VideoDigg failed to update statistics", zap.Error(result.Error))
-			return false
-		}
-
-		result = tx.Exec(
-			`UPDATE tb_users
-			 SET total_favorited = GREATEST(COALESCE(total_favorited, 0) - 1, 0)
-			 WHERE uid = ?`,
-			authorUID,
-		)
 	}
 
 	if result.Error != nil {
 		tx.Rollback()
-		variable.ZapLog.Error("VideoDigg failed to update author favorited count", zap.Error(result.Error))
+		variable.ZapLog.Error("VideoDigg failed to update digg relation", zap.Error(result.Error))
+		return false
+	}
+
+	if !v.refreshVideoDiggCounters(tx, awemeID, authorUID) {
+		tx.Rollback()
 		return false
 	}
 
@@ -359,5 +315,67 @@ func (v *DiggModel) persistVideoDiggState(uid, awemeID, authorUID int64, action 
 		return false
 	}
 
+	v.refreshVideoDiggCache(uid, awemeID, authorUID, action)
 	return true
+}
+
+func (v *DiggModel) refreshVideoDiggCounters(tx *gorm.DB, awemeID, authorUID int64) bool {
+	var diggCount int64
+	if err := tx.Raw(`SELECT COUNT(1) FROM tb_diggs WHERE aweme_id = ?`, awemeID).Scan(&diggCount).Error; err != nil {
+		variable.ZapLog.Error("VideoDigg failed to recount video diggs", zap.Error(err), zap.Int64("aweme_id", awemeID))
+		return false
+	}
+
+	if err := tx.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "id"}},
+		DoUpdates: clause.Assignments(map[string]interface{}{"digg_count": diggCount}),
+	}).Create(&model.Statistics{Id: awemeID, DiggCount: diggCount}).Error; err != nil {
+		variable.ZapLog.Error("VideoDigg failed to sync statistics digg count", zap.Error(err), zap.Int64("aweme_id", awemeID))
+		return false
+	}
+
+	var totalFavorited int64
+	if err := tx.Raw(`
+		SELECT COUNT(1)
+		FROM tb_diggs AS td
+		INNER JOIN tb_videos AS tv ON td.aweme_id = tv.aweme_id
+		WHERE tv.author_user_id = ?`, authorUID).Scan(&totalFavorited).Error; err != nil {
+		variable.ZapLog.Error("VideoDigg failed to recount author favorited count", zap.Error(err), zap.Int64("author_uid", authorUID))
+		return false
+	}
+
+	if err := tx.Exec(`UPDATE tb_users SET total_favorited = ? WHERE uid = ?`, totalFavorited, authorUID).Error; err != nil {
+		variable.ZapLog.Error("VideoDigg failed to sync author favorited count", zap.Error(err), zap.Int64("author_uid", authorUID))
+		return false
+	}
+	return true
+}
+
+func (v *DiggModel) syncVideoDiggCounters(awemeID, authorUID int64) bool {
+	tx := v.DB.Begin()
+	if tx.Error != nil {
+		variable.ZapLog.Error("VideoDigg failed to start sync transaction", zap.Error(tx.Error))
+		return false
+	}
+	if !v.refreshVideoDiggCounters(tx, awemeID, authorUID) {
+		tx.Rollback()
+		return false
+	}
+	if err := tx.Commit().Error; err != nil {
+		variable.ZapLog.Error("VideoDigg failed to commit sync transaction", zap.Error(err))
+		return false
+	}
+	return true
+}
+
+func (v *DiggModel) refreshVideoDiggCache(uid, awemeID, authorUID int64, action bool) {
+	cache := newInteractionCache()
+	cache.invalidateStats(awemeID)
+	_, _ = cache.loadStatsFromDB(awemeID)
+	_, _ = cache.loadUserTotalFavorited(authorUID)
+	if action {
+		cache.addUserLikedVideoAt(uid, awemeID, time.Now().Unix())
+	} else {
+		cache.removeUserLikedVideo(uid, awemeID)
+	}
 }
