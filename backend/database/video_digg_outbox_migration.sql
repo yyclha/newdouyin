@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS video_digg_outbox_events (
+  id bigint NOT NULL AUTO_INCREMENT,
+  event_key varchar(128) NOT NULL,
+  uid bigint NOT NULL,
+  aweme_id bigint NOT NULL,
+  author_uid bigint NOT NULL,
+  action tinyint(1) NOT NULL,
+  version bigint NOT NULL DEFAULT 0,
+  digg_count bigint NOT NULL DEFAULT 0,
+  occurred_at bigint NOT NULL,
+  status varchar(32) NOT NULL DEFAULT 'pending',
+  retry_count int NOT NULL DEFAULT 0,
+  max_retries int NOT NULL DEFAULT 5,
+  next_retry_at bigint NOT NULL DEFAULT 0,
+  error_message text,
+  created_at bigint NOT NULL,
+  updated_at bigint NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_video_digg_outbox_event_key (event_key),
+  KEY idx_video_digg_outbox_status_retry (status, next_retry_at, retry_count)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

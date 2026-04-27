@@ -141,10 +141,18 @@ func (v *DiggModel) VideoDigg(uid, awemeID int64, action bool) bool {
 				DiggCount:  result.DiggCount,
 				OccurredAt: time.Now().Unix(),
 			}
+			outboxEvent, outboxErr := createVideoDiggOutboxEvent(event)
+			if outboxErr != nil {
+				variable.ZapLog.Error("failed to create video digg outbox event", zap.Error(outboxErr), zap.Int64("uid", uid), zap.Int64("aweme_id", awemeID))
+				_, _ = v.applyVideoDiggRedis(cache, uid, awemeID, authorUID, !result.Action)
+				return false
+			}
 			if publishErr := videodiggasync.PublishVideoDiggEvent(event); publishErr == nil {
+				_ = markVideoDiggOutboxPublished(outboxEvent.ID)
 				return true
 			} else {
 				variable.ZapLog.Error("failed to publish video digg event", zap.Error(publishErr), zap.Int64("uid", uid), zap.Int64("aweme_id", awemeID))
+				_ = markVideoDiggOutboxFailed(outboxEvent.ID, publishErr)
 				if v.persistVideoDiggState(uid, awemeID, authorUID, result.Action) {
 					return true
 				}

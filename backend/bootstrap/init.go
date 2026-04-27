@@ -5,6 +5,7 @@ import (
 	"douyin-backend/app/global/my_errors"
 	"douyin-backend/app/global/variable"
 	"douyin-backend/app/http/validator/common/register_validator"
+	"douyin-backend/app/model/video"
 	"douyin-backend/app/service/sys_log_hook"
 	"douyin-backend/app/service/upload_file"
 	"douyin-backend/app/utils/casbin_v2"
@@ -102,6 +103,12 @@ func init() {
 
 	// 6.2 Initialize async video upload workers after database clients are ready.
 	upload_file.InitVideoUploadQueue()
+
+	// 6.3 Ensure and start the video digg outbox dispatcher.
+	if err := video.EnsureVideoDiggOutboxTable(); err != nil {
+		log.Fatal("初始化视频点赞 outbox 表失败:" + err.Error())
+	}
+	video.StartVideoDiggOutboxDispatcher()
 
 	// 7. Initialize snowflake generator.
 	variable.SnowFlake = snow_flake.CreateSnowflakeFactory()

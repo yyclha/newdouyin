@@ -9,4 +9,5 @@ type VideoDiggEvent struct {
 	Version    int64 `json:"version"`
 	DiggCount  int64 `json:"digg_count"`
 	OccurredAt int64 `json:"occurred_at"`
+	RetryCount int   `json:"retry_count"`
 }

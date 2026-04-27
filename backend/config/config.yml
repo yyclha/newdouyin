@@ -109,11 +109,18 @@ RabbitMq:
     OffLineReconnectIntervalSec: 5                        #消费者掉线后,重连间隔的秒数
     RetryCount: 5                                         #消费者掉线后,尝试重连最大次数
   VideoDigg:
-    Addr: "amqp://guest:guest@127.0.0.1:5672/"
+    Addr: "amqp://guest:guest@192.168.237.132:5672/"
     QueueName: "video_digg_queue"
+    DeadLetterQueueName: "video_digg_queue.dlq"
     Durable: true
     PrefetchCount: 1
     ReconnectIntervalSec: 3
+    ConfirmTimeoutSec: 5
+    ConsumerMaxRetries: 3
+    OutboxMaxRetries: 5
+    OutboxRetryDelaySeconds: 10
+    OutboxDispatchIntervalSec: 5
+    OutboxDispatchBatchLimit: 50
   PublishSubscribe:
     Addr: "amqp://账号:密码@ip地址:5672/"   #消息服务器地址、账号、密码
     ExchangeType: "fanout"
