@@ -3,6 +3,7 @@ package user
 import (
 	"douyin-backend/app/global/variable"
 	"douyin-backend/app/model"
+	"douyin-backend/app/model/video"
 	"douyin-backend/app/utils/md5_encrypt"
 	"encoding/json"
 	"fmt"
@@ -183,6 +184,12 @@ func (u *UserModel) GetPanel(uid int64) (userinfo model.User, ok bool) {
 		variable.ZapLog.Error("GetPanel SQL执行出错!", zap.Error(result.Error))
 		ok = false
 		return
+	}
+	likeCache := video.NewUserLikeStatusCache()
+	if totalFavorited, cacheOK := likeCache.GetUserTotalFavorited(uid); cacheOK {
+		userinfo.TotalFavorited = totalFavorited
+	} else if totalFavorited, loadOK := likeCache.LoadUserTotalFavorited(uid); loadOK {
+		userinfo.TotalFavorited = totalFavorited
 	}
 	ok = true
 	return
