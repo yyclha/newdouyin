@@ -285,14 +285,59 @@ function setCurrentItem(item) {
   if (!state.active) return
   // console.log('sss',item,state.baseIndex)
   if (state.baseIndex !== 1) return
-  if (state.currentItem.author.uid !== item.author.uid) {
-    state.currentItem = {
-      ...item,
-      isRequest: false,
-      aweme_list: []
+  const isAttention = baseStore.AwemeStatus.Attentions.some(
+    (id) => String(id) === String(item.author?.uid)
+  )
+  const currentAwemeList =
+    state.currentItem.author.uid === item.author.uid ? state.currentItem.aweme_list : []
+
+  state.currentItem = {
+    ...state.currentItem,
+    ...item,
+    isAttention,
+    isRequest: false,
+    aweme_list: currentAwemeList,
+    author: {
+      ...state.currentItem.author,
+      ...item.author,
+      follow_status: isAttention ? 1 : 0
     }
   }
   // console.log('item', item)
+}
+
+function updateCurrentItem({ item }) {
+  if (!state.active) return
+  if (!item?.aweme_id) return
+
+  const updatedAwemeList = Array.isArray(state.currentItem.aweme_list)
+    ? state.currentItem.aweme_list.map((video) => {
+        if (String(video.aweme_id) !== String(item.aweme_id)) return video
+        return {
+          ...video,
+          ...item,
+          author: {
+            ...video.author,
+            ...item.author
+          }
+        }
+      })
+    : []
+
+  if (String(state.currentItem.aweme_id) !== String(item.aweme_id)) {
+    state.currentItem.aweme_list = updatedAwemeList
+    return
+  }
+
+  state.currentItem = {
+    ...state.currentItem,
+    ...item,
+    aweme_list: updatedAwemeList,
+    author: {
+      ...state.currentItem.author,
+      ...item.author
+    }
+  }
 }
 
 onMounted(() => {
@@ -327,6 +372,7 @@ onMounted(() => {
     state.baseIndex = 2
   })
   bus.on(EVENT_KEY.CURRENT_ITEM, setCurrentItem)
+  bus.on(EVENT_KEY.UPDATE_ITEM, updateCurrentItem)
 })
 
 onUnmounted(() => {

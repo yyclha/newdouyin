@@ -514,8 +514,49 @@ export default {
     this.videoItemHeight = (this.bodyWidth / 3) * 1.2 + 2
     bus.on('baseSlide-moved', () => (this.canScroll = false))
     bus.on('baseSlide-end', () => (this.canScroll = true))
+    bus.on('UPDATE_ITEM', this.syncDiggItem)
+  },
+  unmounted() {
+    bus.off('UPDATE_ITEM', this.syncDiggItem)
   },
   methods: {
+    syncDiggItem({ item } = {}) {
+      if (!item?.aweme_id) return
+
+      const syncList = (list = []) =>
+        list.map((video) => {
+          if (String(video.aweme_id) !== String(item.aweme_id)) return video
+          return {
+            ...video,
+            ...item,
+            statistics: {
+              ...video.statistics,
+              ...item.statistics
+            },
+            author: {
+              ...video.author,
+              ...item.author
+            }
+          }
+        })
+
+      this.videos.my.list = syncList(this.videos.my.list)
+      this.videos.private.list = syncList(this.videos.private.list)
+      this.videos.like.list = syncList(this.videos.like.list)
+      this.videos.collect.video.list = syncList(this.videos.collect.video.list)
+
+      if (
+        item.author?.total_favorited !== undefined &&
+        String(item.author?.uid) === String(useBaseStore().userinfo?.uid)
+      ) {
+        const baseStore = useBaseStore()
+        baseStore.userinfo = {
+          ...baseStore.userinfo,
+          aweme_count: Number(item.author.total_favorited),
+          total_favorited: Number(item.author.total_favorited)
+        }
+      }
+    },
     _no,
     upload_cover() {
       const fileInput = document.createElement('input')

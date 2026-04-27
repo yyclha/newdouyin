@@ -192,6 +192,39 @@ function setCurrentItem(item) {
   // console.log('item', item)
 }
 
+function updateCurrentItem({ item }) {
+  if (!item?.aweme_id) return
+
+  const updatedAwemeList = Array.isArray(state.currentItem.aweme_list)
+    ? state.currentItem.aweme_list.map((video) => {
+        if (String(video.aweme_id) !== String(item.aweme_id)) return video
+        return {
+          ...video,
+          ...item,
+          author: {
+            ...video.author,
+            ...item.author
+          }
+        }
+      })
+    : []
+
+  if (String(state.currentItem.aweme_id) !== String(item.aweme_id)) {
+    state.currentItem.aweme_list = updatedAwemeList
+    return
+  }
+
+  state.currentItem = {
+    ...state.currentItem,
+    ...item,
+    aweme_list: updatedAwemeList,
+    author: {
+      ...state.currentItem.author,
+      ...item.author
+    }
+  }
+}
+
 onMounted(() => {
   bus.on(EVENT_KEY.SINGLE_CLICK, click)
   bus.on(EVENT_KEY.ENTER_FULLSCREEN, () => (state.fullScreen = true))
@@ -212,6 +245,7 @@ onMounted(() => {
     router.back()
   })
   bus.on(EVENT_KEY.CURRENT_ITEM, setCurrentItem)
+  bus.on(EVENT_KEY.UPDATE_ITEM, updateCurrentItem)
 })
 
 onUnmounted(() => {
