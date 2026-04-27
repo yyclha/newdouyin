@@ -30,11 +30,7 @@
     <div class="footer">
       <div class="comment">
         <div class="left">
-          <img
-            :src="_checkImgUrl(baseStore.userinfo.avatar_small)"
-            class="avatar"
-            alt=""
-          />
+          <img :src="_checkImgUrl(baseStore.userinfo.avatar_small)" class="avatar" alt="" />
           <span>善语结善缘，恶言伤人心</span>
         </div>
         <div class="right">
@@ -179,13 +175,11 @@ function delayShowDialog(cb) {
 function setCurrentItem(item) {
   console.log('sss1', item.aweme_id)
   if (state.baseIndex !== 1) return
-  if (baseStore.AwemeStatus.Attentions.includes(item.author.uid)) {
+  if (baseStore.AwemeStatus.Attentions.some((id) => String(id) === String(item.author.uid))) {
     item.isAttention = true
   }
-  if (baseStore.AwemeStatus.Likes.includes(item.aweme_id)) {
-    item.isLoved = true
-  }
-  if (baseStore.AwemeStatus.Collects.includes(item.aweme_id)) {
+  item.isLoved = !!item.is_digg || baseStore.AwemeStatus.Likes.some((id) => String(id) === String(item.aweme_id))
+  if (baseStore.AwemeStatus.Collects.some((id) => String(id) === String(item.aweme_id))) {
     item.isCollect = true
   }
   if (state.currentItem.author.uid !== item.author.uid) {

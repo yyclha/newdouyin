@@ -928,6 +928,21 @@ func (c *UserLikeStatusCache) GetUserLikedVideos(uid int64) ([]int64, bool) {
 	return c.cache.getUserLikedVideos(uid)
 }
 
+// LoadUserLikedVideos 从数据库加载当前用户点赞视频，并回填缓存。
+func (c *UserLikeStatusCache) LoadUserLikedVideos(uid int64) ([]int64, bool) {
+	videoModel := CreateVideoFactory("")
+	items, ok := videoModel.loadUserLikedVideosFromDB(uid)
+	if !ok {
+		return nil, false
+	}
+	c.cache.setUserLikedVideosWithScores(uid, items)
+	ids := make([]int64, 0, len(items))
+	for _, item := range items {
+		ids = append(ids, item.AwemeID)
+	}
+	return ids, true
+}
+
 // SetUserLikedVideos 将用户点赞视频 ID 列表写入缓存。
 func (c *UserLikeStatusCache) SetUserLikedVideos(uid int64, awemeIDs []int64) {
 	c.cache.setUserLikedVideos(uid, awemeIDs)

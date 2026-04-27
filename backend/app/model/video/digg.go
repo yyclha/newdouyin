@@ -113,6 +113,15 @@ type videoDiggRedisResult struct {
 	DiggCount int64
 }
 
+// VideoDiggResult 表示一次视频点赞操作后的最终状态。
+type VideoDiggResult struct {
+	Success        bool  `json:"success"`
+	IsLoved        bool  `json:"is_loved"`
+	DiggCount      int64 `json:"digg_count"`
+	TotalFavorited int64 `json:"total_favorited"`
+	Changed        bool  `json:"changed"`
+}
+
 // CreateDiggFactory 创建带数据库连接的点赞模型实例。
 func CreateDiggFactory(sqlType string) *DiggModel {
 	return &DiggModel{DB: model.UseDbConn(sqlType)}
@@ -120,9 +129,14 @@ func CreateDiggFactory(sqlType string) *DiggModel {
 
 // VideoDigg 对目标视频执行点赞或取消点赞，并保持缓存与数据库状态一致。
 func (v *DiggModel) VideoDigg(uid, awemeID int64, action bool) bool {
+	return v.VideoDiggWithResult(uid, awemeID, action).Success
+}
+
+// VideoDiggWithResult 对目标视频执行点赞或取消点赞，并返回最终状态和计数。
+func (v *DiggModel) VideoDiggWithResult(uid, awemeID int64, action bool) VideoDiggResult {
 	authorUID, ok := v.getVideoAuthorUID(awemeID)
 	if !ok {
-		return false
+		return VideoDiggResult{}
 	}
 
 	cache := newInteractionCache()
@@ -131,8 +145,8 @@ func (v *DiggModel) VideoDigg(uid, awemeID int64, action bool) bool {
 		if err == nil {
 			if !result.Changed {
 				v.syncVideoDiggCounters(awemeID, authorUID)
-				v.refreshVideoDiggCache(uid, awemeID, authorUID, action)
-				return true
+				v.refreshVideoDiggCache(uid, awemeID, authorUID, result.Action)
+				return v.buildVideoDiggResult(uid, awemeID, authorUID, result.Action, false)
 			}
 
 			event := videodiggmq.VideoDiggEvent{
@@ -148,26 +162,29 @@ func (v *DiggModel) VideoDigg(uid, awemeID int64, action bool) bool {
 			if outboxErr != nil {
 				variable.ZapLog.Error("failed to create video digg outbox event", zap.Error(outboxErr), zap.Int64("uid", uid), zap.Int64("aweme_id", awemeID))
 				_, _ = v.applyVideoDiggRedis(cache, uid, awemeID, authorUID, !result.Action)
-				return false
+				return VideoDiggResult{}
 			}
 			if publishErr := videodiggmq.PublishVideoDiggEvent(event); publishErr == nil {
 				_ = markVideoDiggOutboxPublished(outboxEvent.ID)
-				return true
+				return v.buildVideoDiggResult(uid, awemeID, authorUID, result.Action, true)
 			} else {
 				variable.ZapLog.Error("failed to publish video digg event", zap.Error(publishErr), zap.Int64("uid", uid), zap.Int64("aweme_id", awemeID))
 				_ = markVideoDiggOutboxFailed(outboxEvent.ID, publishErr)
 				if v.persistVideoDiggState(uid, awemeID, authorUID, result.Action) {
-					return true
+					return v.buildVideoDiggResult(uid, awemeID, authorUID, result.Action, true)
 				}
 				_, _ = v.applyVideoDiggRedis(cache, uid, awemeID, authorUID, !result.Action)
-				return false
+				return VideoDiggResult{}
 			}
 		}
 
 		variable.ZapLog.Error("failed to update video digg cache", zap.Error(err), zap.Int64("uid", uid), zap.Int64("aweme_id", awemeID))
 	}
 
-	return v.persistVideoDiggState(uid, awemeID, authorUID, action)
+	if !v.persistVideoDiggState(uid, awemeID, authorUID, action) {
+		return VideoDiggResult{}
+	}
+	return v.buildVideoDiggResult(uid, awemeID, authorUID, action, true)
 }
 
 // HandleAsyncDiggEvent 持久化缓存更新成功后发布的异步点赞事件。
@@ -377,5 +394,33 @@ func (v *DiggModel) refreshVideoDiggCache(uid, awemeID, authorUID int64, action 
 		cache.addUserLikedVideoAt(uid, awemeID, time.Now().Unix())
 	} else {
 		cache.removeUserLikedVideo(uid, awemeID)
+	}
+}
+
+func (v *DiggModel) buildVideoDiggResult(uid, awemeID, authorUID int64, action bool, changed bool) VideoDiggResult {
+	cache := newInteractionCache()
+	diggCount := int64(0)
+	if stats, ok := cache.getOrLoadStats(awemeID); ok {
+		diggCount = stats.DiggCount
+	}
+
+	totalFavorited := int64(0)
+	if total, ok := cache.getUserTotalFavorited(authorUID); ok {
+		totalFavorited = total
+	} else if total, ok = cache.loadUserTotalFavorited(authorUID); ok {
+		totalFavorited = total
+	}
+
+	isLoved := action
+	if liked, ok := cache.isVideoLikedByUser(uid, awemeID); ok {
+		isLoved = liked
+	}
+
+	return VideoDiggResult{
+		Success:        true,
+		IsLoved:        isLoved,
+		DiggCount:      diggCount,
+		TotalFavorited: totalFavorited,
+		Changed:        changed,
 	}
 }

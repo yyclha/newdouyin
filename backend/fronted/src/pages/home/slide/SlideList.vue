@@ -102,13 +102,13 @@ async function getData(refresh = false) {
     }
     // 为每个视频加上状态信息，用户是否关注过、视频是否点赞过、视频是否收藏过
     for (let i = 0; i < res.data.list.length; i++) {
-      if (baseStore.AwemeStatus.Attentions.includes(res.data.list[i].author.uid)) {
+      const item = res.data.list[i]
+      if (baseStore.AwemeStatus.Attentions.some((id) => String(id) === String(item.author.uid))) {
         res.data.list[i].isAttention = true
       }
-      if (baseStore.AwemeStatus.Likes.includes(res.data.list[i].aweme_id)) {
-        res.data.list[i].isLoved = true
-      }
-      if (baseStore.AwemeStatus.Collects.includes(res.data.list[i].aweme_id)) {
+      res.data.list[i].isLoved =
+        !!item.is_digg || baseStore.AwemeStatus.Likes.some((id) => String(id) === String(item.aweme_id))
+      if (baseStore.AwemeStatus.Collects.some((id) => String(id) === String(item.aweme_id))) {
         res.data.list[i].isCollect = true
       }
     }

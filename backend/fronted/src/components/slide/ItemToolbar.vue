@@ -4,9 +4,10 @@ import { _checkImgUrl, _formatNumber, cloneDeep } from '@/utils'
 import bus, { EVENT_KEY } from '@/utils/bus'
 import { Icon } from '@iconify/vue'
 import { useClick } from '@/utils/hooks/useClick'
-import { inject } from 'vue'
+import { computed, inject } from 'vue'
 import { videoCollect, videoDigg } from '@/api/videos'
 import { userAttention } from '@/api/user'
+import { useBaseStore } from '@/store/pinia'
 
 const props = defineProps({
   isMy: {
@@ -24,48 +25,115 @@ const props = defineProps({
 })
 
 const position = inject<any>('position')
+const baseStore = useBaseStore()
+const isAttention = computed(() => {
+  const uid = String(props.item?.author?.uid || '')
+  if (!uid) return !!props.item?.isAttention || !!props.item?.author?.follow_status
+
+  return (
+    !!props.item?.isAttention ||
+    !!props.item?.author?.follow_status ||
+    baseStore.AwemeStatus.Attentions.some((id) => String(id) === uid)
+  )
+})
 
 const emit = defineEmits(['update:item', 'goUserInfo', 'showComments', 'showShare', 'goMusic'])
 
-function _updateItem(props, key, val) {
-  const old = cloneDeep(props.item)
-  old[key] = val
-  emit('update:item', old)
-  bus.emit(EVENT_KEY.UPDATE_ITEM, { position: position.value, item: old })
+function _updateItem(item) {
+  emit('update:item', item)
+  bus.emit(EVENT_KEY.UPDATE_ITEM, { position: position.value, item })
+}
+
+function syncAttentionState(nextItem, followed) {
+  nextItem.isAttention = followed
+
+  if (nextItem.author) {
+    nextItem.author.follow_status = followed ? 1 : 0
+  }
+
+  const uid = String(nextItem.author?.uid || '')
+  if (!uid) return
+
+  const attentions = Array.isArray(baseStore.AwemeStatus.Attentions)
+    ? [...baseStore.AwemeStatus.Attentions]
+    : []
+
+  if (followed) {
+    if (!attentions.includes(uid)) {
+      attentions.push(uid)
+    }
+    baseStore.AwemeStatus.Attentions = attentions
+    return
+  }
+
+  baseStore.AwemeStatus.Attentions = attentions.filter((id) => String(id) !== uid)
+}
+
+function syncLovedState(awemeId, loved) {
+  const likes = Array.isArray(baseStore.AwemeStatus.Likes) ? [...baseStore.AwemeStatus.Likes] : []
+  const targetId = String(awemeId)
+
+  if (loved) {
+    if (!likes.includes(targetId)) {
+      likes.push(targetId)
+    }
+    baseStore.AwemeStatus.Likes = likes
+    return
+  }
+
+  baseStore.AwemeStatus.Likes = likes.filter((id) => String(id) !== targetId)
 }
 
 async function loved() {
-  // 切换当前点赞状态
   try {
-    const nextLoved = !props.item.isLoved
-    // 调用点赞 API，传入 videoId 和新状态
+    const nextAction = !props.item.isLoved
     console.log('aweme_id:', props)
     const res = await videoDigg(
       {},
       {
         aweme_id: props.item.aweme_id,
-        action: nextLoved
+        action: nextAction
       }
     )
+
     if (res.success) {
-      const old = cloneDeep(props.item)
-      old.isLoved = nextLoved
-      const currentCount = Number(old.statistics?.digg_count || 0)
-      old.statistics.digg_count = nextLoved ? currentCount + 1 : Math.max(currentCount - 1, 0)
-      emit('update:item', old)
-      bus.emit(EVENT_KEY.UPDATE_ITEM, { position: position.value, item: old })
+      const nextItem = cloneDeep(props.item)
+      const result = res.data?.data || res.data || {}
+      const nextLoved = typeof result.is_loved === 'boolean' ? result.is_loved : nextAction
+
+      nextItem.isLoved = nextLoved
+      nextItem.is_digg = nextLoved
+      nextItem.statistics.digg_count =
+        result.digg_count !== undefined
+          ? Number(result.digg_count)
+          : Math.max((nextItem.statistics?.digg_count || 0) + (nextLoved ? 1 : -1), 0)
+
+      if (nextItem.author) {
+        nextItem.author.total_favorited =
+          result.total_favorited !== undefined
+            ? Number(result.total_favorited)
+            : Math.max((nextItem.author.total_favorited || 0) + (nextLoved ? 1 : -1), 0)
+
+        if (String(nextItem.author.uid) === String(baseStore.userinfo.uid)) {
+          baseStore.userinfo = {
+            ...baseStore.userinfo,
+            total_favorited: nextItem.author.total_favorited
+          }
+        }
+      }
+
+      syncLovedState(nextItem.aweme_id, nextLoved)
+      _updateItem(nextItem)
     } else {
-      console.error('点赞请求失败:', res.data.msg)
+      console.error('点赞失败:', res.data.msg)
     }
   } catch (error) {
-    console.error('点赞时出现错误:', error)
+    console.error('点赞请求异常:', error)
   }
 }
 
 async function collecte() {
-  // 切换当前收藏状态
   try {
-    // 调用点赞 API，传入 videoId 和新状态
     console.log('aweme_id:', props)
     const res = await videoCollect(
       {},
@@ -74,23 +142,23 @@ async function collecte() {
         action: !props.item.isCollect
       }
     )
+
     if (res.success) {
-      // 更新 isCollect 状态
-      setTimeout(() => {
-        _updateItem(props, 'isCollect', !props.item.isCollect)
-      }, 100)
-      if (!props.item.isCollect) {
-        // eslint-disable-next-line vue/no-mutating-props
-        props.item.statistics.collect_count++
-      } else {
-        // eslint-disable-next-line vue/no-mutating-props
-        props.item.statistics.collect_count--
-      }
+      const nextItem = cloneDeep(props.item)
+      const nextCollect = !nextItem.isCollect
+
+      nextItem.isCollect = nextCollect
+      nextItem.statistics.collect_count = Math.max(
+        (nextItem.statistics?.collect_count || 0) + (nextCollect ? 1 : -1),
+        0
+      )
+
+      _updateItem(nextItem)
     } else {
       console.error('收藏失败:', res.data.msg)
     }
   } catch (error) {
-    console.error('收藏时出现错误:', error)
+    console.error('收藏请求异常:', error)
   }
 }
 
@@ -98,32 +166,32 @@ async function attention(e) {
   console.log('关注', props.item)
   e.currentTarget.classList.add('attention')
 
-  // 切换当前关注状态
   try {
-    // 调用点赞 API，传入 videoId 和新状态
+    const nextAttention = !isAttention.value
     const res = await userAttention(
       {},
       {
         following_id: String(props.item.author.uid),
-        action: !props.item.isAttention
+        action: nextAttention
       }
     )
+
     if (res.success) {
-      // 更新 isAttention 状态
-      setTimeout(() => {
-        _updateItem(props, 'isAttention', !props.item.isAttention)
-      }, 1000)
+      const nextItem = cloneDeep(props.item)
+      syncAttentionState(nextItem, nextAttention)
+      _updateItem(nextItem)
     } else {
       console.error('关注失败:', res.data.msg)
     }
   } catch (error) {
-    console.error('关注时出现错误:', error)
+    console.error('关注请求异常:', error)
   }
 }
 
 function showComments() {
   bus.emit(EVENT_KEY.OPEN_COMMENTS, props.item.aweme_id)
 }
+
 const vClick = useClick()
 </script>
 
@@ -137,7 +205,11 @@ const vClick = useClick()
         v-click="() => bus.emit(EVENT_KEY.GO_USERINFO)"
       />
       <transition name="fade">
-        <div v-if="!item.isAttention" v-click="attention" class="options">
+        <div
+          v-if="!isAttention"
+          v-click="attention"
+          class="options"
+        >
           <img class="no" src="../../assets/img/icon/add-light.png" alt="" />
           <img class="yes" src="../../assets/img/icon/ok-red.png" alt="" />
         </div>

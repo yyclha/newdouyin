@@ -25,28 +25,28 @@ func (v *VideoController) VideoDigg(ctx *gin.Context) {
 	var awemeId = ctx.GetString(consts.ValidatorPrefix + "aweme_id")
 	var action = ctx.GetBool(consts.ValidatorPrefix + "action")
 	var awemeIDInt64, _ = strconv.ParseInt(awemeId, 10, 64)
-	actionStatus := video.CreateDiggFactory("").VideoDigg(uid, awemeIDInt64, action)
-	if actionStatus {
+	actionResult := video.CreateDiggFactory("").VideoDiggWithResult(uid, awemeIDInt64, action)
+	if actionResult.Success {
 		if action {
 			response.Success(ctx, consts.CurdStatusOkMsg, gin.H{
-				"data": actionStatus,
+				"data": actionResult,
 				"msg":  "点赞成功",
 			})
 		} else {
 			response.Success(ctx, consts.CurdStatusOkMsg, gin.H{
-				"data": actionStatus,
+				"data": actionResult,
 				"msg":  "取消点赞成功",
 			})
 		}
 	} else {
 		if action {
 			response.Fail(ctx, consts.CurdInsertFailCode, consts.CurdInsertFailMsg, gin.H{
-				"data": actionStatus,
+				"data": actionResult,
 				"msg":  "点赞失败",
 			})
 		} else {
 			response.Fail(ctx, consts.CurdInsertFailCode, consts.CurdInsertFailMsg, gin.H{
-				"data": actionStatus,
+				"data": actionResult,
 				"msg":  "取消点赞失败",
 			})
 		}

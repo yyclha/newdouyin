@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"strconv"
 	"time"
 )
 
@@ -164,11 +165,18 @@ func (u *UserModel) UpdateInfo(uid int64, operationType int, data string) bool {
 // AwemeStatus 查询当前用户的关注、点赞和收藏状态数据。
 func (u *UserModel) AwemeStatus(uid int64) (awemeStatus AwemeStatusModel, success bool) {
 	attentionSql := `SELECT following_id FROM tb_relations WHERE follower_id=?`
-	diggSql := `SELECT aweme_id FROM tb_diggs WHERE uid=?`
 	collectSql := `SELECT aweme_id FROM tb_collects WHERE uid=?`
 	u.Raw(attentionSql, uid).Find(&awemeStatus.Attentions)
-	u.Raw(diggSql, uid).Find(&awemeStatus.Likes)
 	u.Raw(collectSql, uid).Find(&awemeStatus.Collects)
+	likeCache := video.NewUserLikeStatusCache()
+	likedVideos, ok := likeCache.GetUserLikedVideos(uid)
+	if !ok {
+		likedVideos, _ = likeCache.LoadUserLikedVideos(uid)
+	}
+	awemeStatus.Likes = make([]string, 0, len(likedVideos))
+	for _, awemeID := range likedVideos {
+		awemeStatus.Likes = append(awemeStatus.Likes, strconv.FormatInt(awemeID, 10))
+	}
 	return awemeStatus, true
 }
 
