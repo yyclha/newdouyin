@@ -1,4 +1,4 @@
-package service
+package video_digg_mq
 
 import (
 	"douyin-backend/app/global/variable"

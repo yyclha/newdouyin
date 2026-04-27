@@ -1,4 +1,4 @@
-package service
+package video_digg_mq
 
 // VideoDiggEvent 定义视频点赞异步事件的消息体结构。
 type VideoDiggEvent struct {

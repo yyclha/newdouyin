@@ -3,7 +3,7 @@ package video
 import (
 	"douyin-backend/app/global/variable"
 	"douyin-backend/app/model"
-	videodiggasync "douyin-backend/app/service"
+	videodiggmq "douyin-backend/app/service/video_digg_mq"
 	"errors"
 	"fmt"
 	"github.com/gomodule/redigo/redis"
@@ -132,7 +132,7 @@ func (v *DiggModel) VideoDigg(uid, awemeID int64, action bool) bool {
 				return true
 			}
 
-			event := videodiggasync.VideoDiggEvent{
+			event := videodiggmq.VideoDiggEvent{
 				UID:        uid,
 				AwemeID:    awemeID,
 				AuthorUID:  authorUID,
@@ -147,7 +147,7 @@ func (v *DiggModel) VideoDigg(uid, awemeID int64, action bool) bool {
 				_, _ = v.applyVideoDiggRedis(cache, uid, awemeID, authorUID, !result.Action)
 				return false
 			}
-			if publishErr := videodiggasync.PublishVideoDiggEvent(event); publishErr == nil {
+			if publishErr := videodiggmq.PublishVideoDiggEvent(event); publishErr == nil {
 				_ = markVideoDiggOutboxPublished(outboxEvent.ID)
 				return true
 			} else {
@@ -168,7 +168,7 @@ func (v *DiggModel) VideoDigg(uid, awemeID int64, action bool) bool {
 }
 
 // HandleAsyncDiggEvent 持久化缓存更新成功后发布的异步点赞事件。
-func (v *DiggModel) HandleAsyncDiggEvent(event videodiggasync.VideoDiggEvent) error {
+func (v *DiggModel) HandleAsyncDiggEvent(event videodiggmq.VideoDiggEvent) error {
 	cache := newInteractionCache()
 	if version, ok := cache.getDiggVersion(event.UID, event.AwemeID); ok && version > event.Version {
 		return nil

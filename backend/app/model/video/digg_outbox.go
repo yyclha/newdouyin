@@ -3,7 +3,7 @@ package video
 import (
 	"douyin-backend/app/global/variable"
 	"douyin-backend/app/model"
-	videodiggasync "douyin-backend/app/service"
+	videodiggmq "douyin-backend/app/service/video_digg_mq"
 	"errors"
 	"fmt"
 	"time"
@@ -97,7 +97,7 @@ func StartVideoDiggOutboxDispatcher() {
 	}()
 }
 
-func createVideoDiggOutboxEvent(event videodiggasync.VideoDiggEvent) (*VideoDiggOutboxEvent, error) {
+func createVideoDiggOutboxEvent(event videodiggmq.VideoDiggEvent) (*VideoDiggOutboxEvent, error) {
 	db := modelDB()
 	if db == nil {
 		return nil, errors.New("database is unavailable")
@@ -163,7 +163,7 @@ func dispatchVideoDiggOutboxEvents() {
 }
 
 func publishVideoDiggOutboxEvent(record VideoDiggOutboxEvent) {
-	event := videodiggasync.VideoDiggEvent{
+	event := videodiggmq.VideoDiggEvent{
 		UID:        record.UID,
 		AwemeID:    record.AwemeID,
 		AuthorUID:  record.AuthorUID,
@@ -173,7 +173,7 @@ func publishVideoDiggOutboxEvent(record VideoDiggOutboxEvent) {
 		OccurredAt: record.OccurredAt,
 	}
 
-	if err := videodiggasync.PublishVideoDiggEvent(event); err != nil {
+	if err := videodiggmq.PublishVideoDiggEvent(event); err != nil {
 		_ = markVideoDiggOutboxFailed(record.ID, err)
 		return
 	}
@@ -216,7 +216,7 @@ func markVideoDiggOutboxFailed(id int64, publishErr error) error {
 	}).Error
 }
 
-func videoDiggOutboxEventKey(event videodiggasync.VideoDiggEvent) string {
+func videoDiggOutboxEventKey(event videodiggmq.VideoDiggEvent) string {
 	return fmt.Sprintf("%d:%d:%d", event.UID, event.AwemeID, event.Version)
 }
 
